@@ -175,7 +175,7 @@ export default function Settings() {
 
       <Tabs
         size="middle"
-        destroyInactiveTabPane={false}
+        destroyOnHidden={false}
         items={[
           {
             key: 'gpt',

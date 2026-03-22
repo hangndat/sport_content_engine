@@ -5,7 +5,7 @@ import { jaccardSimilarity } from "../lib/jaccard.js";
 import { extractMatchScore } from "../lib/entityExtract.js";
 import { getEmbeddingsForTitles, cosineSim } from "../lib/embedding.js";
 import { hasOpenAIKey } from "../lib/openai.js";
-import { inferTopic } from "../services/TopicService.js";
+import { inferTopics } from "../services/TopicService.js";
 
 const TIME_WINDOW_HOURS = 24;
 const USE_AI_CLUSTER = process.env.USE_AI_CLUSTER !== "false";
@@ -266,7 +266,14 @@ export class DedupService {
     }
 
     for (const [clusterId, mergedIds] of toMerge) {
-      await db.update(storyClusters).set({ articleIds: mergedIds }).where(eq(storyClusters.id, clusterId));
+      const mergedArts = await db.select().from(articles).where(inArray(articles.id, mergedIds));
+      const allTopicIds = new Set<string>();
+      for (const art of mergedArts) {
+        const tops = await inferTopics(art);
+        for (const t of tops) allTopicIds.add(t);
+      }
+      const topicIds = allTopicIds.size > 0 ? [...allTopicIds] : ["other"];
+      await db.update(storyClusters).set({ articleIds: mergedIds, topicIds }).where(eq(storyClusters.id, clusterId));
     }
 
     const unmatched = arts.filter((a) => !assigned.has(a.id));
@@ -300,8 +307,15 @@ export class DedupService {
       if (ids.length === 0) continue;
       const sorted = [...ids].sort();
       const canonicalId = sorted[0]!;
-      const canonicalArt = artsById.get(canonicalId);
-      const topic = canonicalArt ? await inferTopic(canonicalArt) : "other";
+      const clusterArts = sorted.map((id) => artsById.get(id)).filter(Boolean);
+      const allTopicIds = new Set<string>();
+      for (const art of clusterArts) {
+        if (art) {
+          const tops = await inferTopics(art);
+          for (const t of tops) allTopicIds.add(t);
+        }
+      }
+      const topicIds = allTopicIds.size > 0 ? [...allTopicIds] : ["other"];
       const hashKey = `fuzzy-${createHash("sha256").update(sorted.join(",")).digest("hex").slice(0, 24)}`;
       const clusterId = `cluster-${hashKey}`;
 
@@ -313,14 +327,14 @@ export class DedupService {
           articleIds: ids,
           canonicalArticleId: canonicalId,
           score: 0,
-          topic,
+          topicIds,
         })
         .onConflictDoUpdate({
           target: storyClusters.hashKey,
           set: {
             articleIds: ids,
             canonicalArticleId: canonicalId,
-            topic,
+            topicIds,
           },
         });
       updatedClusterIds.add(clusterId);

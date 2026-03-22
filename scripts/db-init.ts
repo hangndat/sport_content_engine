@@ -40,8 +40,12 @@ async function runMigration(pool: pg.Pool): Promise<void> {
     const s = stmt.trim();
     if (s) await pool.query(s);
   }
-  // 2. Các migration bổ sung (tone, writer_history, gpt_writer_config)
-  for (const name of ["0001_watery_valkyrie", "0002_married_zzzax"]) {
+  // 2. Các migration bổ sung
+  for (const name of [
+    "0001_watery_valkyrie",
+    "0002_married_zzzax",
+    "0003_topic_to_topic_ids",
+  ]) {
     const p = join(__dirname, "../drizzle", `${name}.sql`);
     try {
       const m = readFileSync(p, "utf-8");

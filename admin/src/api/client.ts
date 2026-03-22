@@ -1,9 +1,16 @@
 export const API_BASE = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '' : '');
 
-export function buildQueryString(params: Record<string, string | number | undefined>): string {
+export function buildQueryString(params: Record<string, string | number | string[] | undefined>): string {
   const q = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
-    if (v != null && v !== '') q.set(k, String(v));
+    if (v == null) continue;
+    if (Array.isArray(v)) {
+      for (const item of v) {
+        if (item != null && item !== '') q.append(k, String(item));
+      }
+    } else if (v !== '') {
+      q.set(k, String(v));
+    }
   }
   const s = q.toString();
   return s ? `?${s}` : '';

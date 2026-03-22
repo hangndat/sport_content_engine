@@ -164,7 +164,7 @@ export default function Sources() {
         onOk={crud.handleSave}
         onCancel={crud.closeModal}
         confirmLoading={crud.saving}
-        destroyOnClose={false}
+        destroyOnHidden={false}
       >
         <Form form={form} layout="vertical">
           <Form.Item name="id" label="ID" rules={[{ required: !crud.editing }]}>

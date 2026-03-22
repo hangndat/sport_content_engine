@@ -1,16 +1,16 @@
-import { App as AntdApp, Card, Button, Form, Select, Input, Typography } from 'antd';
+import { App as AntdApp, Card, Button, Form, Select, Input, Typography, Tag } from 'antd';
 import { ArrowLeftOutlined, ThunderboltOutlined } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { getCluster } from '../api';
 import { CreateDraftWriterDrawer } from '../components/CreateDraftWriterDrawer';
-import { FORMAT_OPTIONS, TONE_OPTIONS } from '../constants';
+import { FORMAT_OPTIONS, TONE_OPTIONS, TOPIC_COLORS } from '../constants';
 
 type ClusterInfo = {
   id: string;
   canonicalTitle?: string | null;
-  topic?: string | null;
-  topicLabel?: string | null;
+  topicIds?: string[];
+  topicLabels?: { id: string; label: string }[];
   score?: number;
 };
 
@@ -59,23 +59,21 @@ export default function DraftCreator() {
     setCreateDrawerOpen(true);
   };
 
-  if (loading || !cluster) {
-    return (
-      <div style={{ padding: 48, textAlign: 'center' }}>
-        <Typography.Text type="secondary">Đang tải...</Typography.Text>
-      </div>
-    );
-  }
-
   return (
-    <div style={{ padding: '0 24px', maxWidth: 560 }}>
-      <div style={{ marginBottom: 24 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/clusters/${clusterId}`)}>
-          Quay lại
-        </Button>
-      </div>
+    <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={{ format: 'auto', tone: 'neutral' }}>
+      <div style={{ padding: '0 24px', maxWidth: 560 }}>
+        <div style={{ marginBottom: 24 }}>
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate(`/clusters/${clusterId}`)}>
+            Quay lại
+          </Button>
+        </div>
 
-      <Card
+        {loading || !cluster ? (
+          <div style={{ padding: 48, textAlign: 'center' }}>
+            <Typography.Text type="secondary">Đang tải...</Typography.Text>
+          </div>
+        ) : (
+          <Card
         title={
           <span>
             <ThunderboltOutlined style={{ marginRight: 8 }} />
@@ -84,17 +82,20 @@ export default function DraftCreator() {
         }
         styles={{ header: { padding: '16px 20px' } }}
       >
-        <Typography.Paragraph type="secondary" style={{ marginBottom: 24 }}>
-          {cluster.canonicalTitle ?? cluster.id}
+        <Typography.Paragraph type="secondary" style={{ marginBottom: (cluster!.topicLabels?.length ?? 0) > 0 ? 8 : 24 }}>
+          {cluster!.canonicalTitle ?? cluster!.id}
         </Typography.Paragraph>
+        {(cluster!.topicLabels?.length ?? 0) > 0 && (
+          <div style={{ marginBottom: 24, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+            {(cluster!.topicLabels ?? []).map((t) => (
+              <Tag key={t.id} color={TOPIC_COLORS[t.id] ?? 'default'}>
+                {t.label}
+              </Tag>
+            ))}
+          </div>
+        )}
 
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-          initialValues={{ format: 'auto', tone: 'neutral' }}
-        >
-          <Form.Item
+        <Form.Item
             name="format"
             label="Format nội dung"
             tooltip="Tự động: AI chọn format phù hợp. Hoặc chọn format cụ thể."
@@ -121,13 +122,14 @@ export default function DraftCreator() {
             />
           </Form.Item>
 
-          <Form.Item>
-            <Button type="primary" htmlType="submit" icon={<ThunderboltOutlined />}>
-              Tạo bản nháp
-            </Button>
-          </Form.Item>
-        </Form>
+        <Form.Item>
+          <Button type="primary" htmlType="submit" icon={<ThunderboltOutlined />}>
+            Tạo bản nháp
+          </Button>
+        </Form.Item>
       </Card>
+        )}
+      </div>
 
       <CreateDraftWriterDrawer
         open={createDrawerOpen}
@@ -141,6 +143,6 @@ export default function DraftCreator() {
           navigate(`/drafts/${draftId}`);
         }}
       />
-    </div>
+    </Form>
   );
 }

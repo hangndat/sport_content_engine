@@ -73,7 +73,7 @@ export const storyClusters = pgTable("story_clusters", {
     .notNull()
     .references(() => articles.id),
   score: integer("score").default(0),
-  topic: text("topic"),
+  topicIds: jsonb("topic_ids").$type<string[]>(),
   enrichedAt: timestamp("enriched_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });

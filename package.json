@@ -17,7 +17,10 @@
     "db:init": "tsx scripts/db-init.ts",
     "db:seed": "tsx scripts/db-seed.ts",
     "db:clean": "tsx scripts/clean-data.ts",
+    "db:migrate-topics": "tsx scripts/migrate-topic-to-topic-ids.ts",
     "db:backfill-scores": "tsx scripts/backfill-cluster-scores.ts",
+    "db:backfill-topics": "tsx scripts/backfill-cluster-topics.ts",
+    "db:debug-cluster": "tsx scripts/debug-cluster-topics.ts",
     "lint": "eslint src --ext .ts",
     "test": "vitest run"
   },

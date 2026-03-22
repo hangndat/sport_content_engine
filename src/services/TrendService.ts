@@ -1,4 +1,4 @@
-import { gte, lte, and } from "drizzle-orm";
+import { gte, lte, and, sql } from "drizzle-orm";
 import { db, articles } from "../db/index.js";
 
 const TREND_HOURS = 24;
@@ -29,44 +29,79 @@ function toDateKey(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** Đếm số CLUSTERS (không phải articles) có entity trong 24h — khớp với trang /clusters khi click tag */
+async function getTrendsByClusters(
+  cutoff: Date,
+  limit: number
+): Promise<Trends> {
+  const cutoffIso = cutoff.toISOString();
+  const [teamsRes, compsRes, playersRes] = await Promise.all([
+    db.execute<{ name: string; count: number }>(sql`
+      WITH recent_arts AS (
+        SELECT id, teams FROM articles
+        WHERE published_at >= ${cutoffIso}::timestamptz
+      ),
+      art_teams AS (
+        SELECT a.id AS art_id, lower(trim(e.elem)) AS team_name
+        FROM recent_arts a,
+        LATERAL jsonb_array_elements_text(COALESCE(a.teams,'[]'::jsonb)) AS e(elem)
+        WHERE length(trim(e.elem)) >= 2
+      ),
+      cluster_teams AS (
+        SELECT DISTINCT sc.id AS cluster_id, at.team_name
+        FROM story_clusters sc,
+        LATERAL jsonb_array_elements_text(sc.article_ids) AS aid(elem)
+        JOIN art_teams at ON at.art_id = aid.elem
+      )
+      SELECT team_name AS name, count(*)::int AS count
+      FROM cluster_teams GROUP BY team_name ORDER BY count DESC LIMIT ${limit}
+    `),
+    db.execute<{ name: string; count: number }>(sql`
+      WITH recent_arts AS (
+        SELECT id, competition FROM articles
+        WHERE published_at >= ${cutoffIso}::timestamptz AND competition IS NOT NULL AND trim(competition) != ''
+      ),
+      cluster_comps AS (
+        SELECT DISTINCT sc.id AS cluster_id, lower(trim(a.competition)) AS comp_name
+        FROM story_clusters sc,
+        LATERAL jsonb_array_elements_text(sc.article_ids) AS aid(elem)
+        JOIN recent_arts a ON a.id = aid.elem
+      )
+      SELECT comp_name AS name, count(*)::int AS count
+      FROM cluster_comps GROUP BY comp_name ORDER BY count DESC LIMIT ${limit}
+    `),
+    db.execute<{ name: string; count: number }>(sql`
+      WITH recent_arts AS (
+        SELECT id, players FROM articles
+        WHERE published_at >= ${cutoffIso}::timestamptz
+      ),
+      art_players AS (
+        SELECT a.id AS art_id, lower(trim(e.elem)) AS player_name
+        FROM recent_arts a,
+        LATERAL jsonb_array_elements_text(COALESCE(a.players,'[]'::jsonb)) AS e(elem)
+        WHERE length(trim(e.elem)) >= 2
+      ),
+      cluster_players AS (
+        SELECT DISTINCT sc.id AS cluster_id, ap.player_name
+        FROM story_clusters sc,
+        LATERAL jsonb_array_elements_text(sc.article_ids) AS aid(elem)
+        JOIN art_players ap ON ap.art_id = aid.elem
+      )
+      SELECT player_name AS name, count(*)::int AS count
+      FROM cluster_players GROUP BY player_name ORDER BY count DESC LIMIT ${limit}
+    `),
+  ]);
+  return {
+    teams: (teamsRes.rows ?? []).map((r) => ({ name: r.name, count: Number(r.count) })),
+    competitions: (compsRes.rows ?? []).map((r) => ({ name: r.name, count: Number(r.count) })),
+    players: (playersRes.rows ?? []).map((r) => ({ name: r.name, count: Number(r.count) })),
+  };
+}
+
 export class TrendService {
   async getTrends(hours = TREND_HOURS, limit = TOP_LIMIT): Promise<Trends> {
     const cutoff = new Date(Date.now() - hours * MS_PER_HOUR);
-    const rows = await db
-      .select({ teams: articles.teams, players: articles.players, competition: articles.competition })
-      .from(articles)
-      .where(gte(articles.publishedAt, cutoff));
-
-    const teamCounts = new Map<string, number>();
-    const playerCounts = new Map<string, number>();
-    const competitionCounts = new Map<string, number>();
-
-    for (const r of rows) {
-      for (const t of r.teams ?? []) {
-        const key = normalizeName(t);
-        if (key.length >= 2) teamCounts.set(key, (teamCounts.get(key) ?? 0) + 1);
-      }
-      for (const p of r.players ?? []) {
-        const key = normalizeName(p);
-        if (key.length >= 2) playerCounts.set(key, (playerCounts.get(key) ?? 0) + 1);
-      }
-      if (r.competition?.trim()) {
-        const key = normalizeName(r.competition);
-        competitionCounts.set(key, (competitionCounts.get(key) ?? 0) + 1);
-      }
-    }
-
-    const toTrendList = (m: Map<string, number>): TrendItem[] =>
-      [...m.entries()]
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, limit)
-        .map(([name, count]) => ({ name, count }));
-
-    return {
-      teams: toTrendList(teamCounts),
-      competitions: toTrendList(competitionCounts),
-      players: toTrendList(playerCounts),
-    };
+    return getTrendsByClusters(cutoff, limit);
   }
 
   async getTrendsByDay(options?: {

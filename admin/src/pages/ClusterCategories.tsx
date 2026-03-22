@@ -70,7 +70,14 @@ export default function ClusterCategories() {
               title: 'Chủ đề',
               dataIndex: 'topicIds',
               key: 'topicIds',
-              render: (_: unknown, r: CategoryRow) => r.topicIds?.join(', ') ?? '-',
+              render: (_: unknown, r: CategoryRow) =>
+                (r.topicIds ?? []).length > 0 ? (
+                  (r.topicIds ?? [])
+                    .map((tid) => topics.find((x) => x.id === tid)?.label ?? tid)
+                    .join(', ')
+                ) : (
+                  '-'
+                ),
             },
             {
               title: 'Thứ tự',
@@ -114,7 +121,7 @@ export default function ClusterCategories() {
         onOk={crud.handleSave}
         onCancel={crud.closeModal}
         confirmLoading={crud.saving}
-        destroyOnClose={false}
+        destroyOnHidden={false}
       >
         <Form form={form} layout="vertical">
           <Form.Item name="id" label="ID" rules={[{ required: !crud.editing }]}>

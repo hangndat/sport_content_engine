@@ -26,8 +26,8 @@ type ClusterDetail = {
   id: string;
   score: number;
   scoreDetail?: ScoreDetail;
-  topic?: string | null;
-  topicLabel?: string | null;
+  topicIds?: string[];
+  topicLabels?: { id: string; label: string }[];
   canonicalTitle?: string | null;
   articles: { id: string; title: string; source: string; publishedAt: string; url?: string }[];
   drafts: ClusterDraft[];
@@ -77,11 +77,11 @@ export default function ClusterDetail() {
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/clusters')}>
           Quay lại
         </Button>
-        {cluster.topic && (
-          <Tag color={TOPIC_COLORS[cluster.topic] ?? 'default'}>
-            {cluster.topicLabel ?? cluster.topic}
+        {(cluster.topicLabels ?? []).map((t) => (
+          <Tag key={t.id} color={TOPIC_COLORS[t.id] ?? 'default'}>
+            {t.label}
           </Tag>
-        )}
+        ))}
         <Tag color="blue">{cluster.score}đ</Tag>
         <Tag>{cluster.articles?.length ?? 0} nguồn</Tag>
         <span style={{ flex: 1 }} />

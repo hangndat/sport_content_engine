@@ -36,7 +36,7 @@ type Cluster = {
   id: string;
   score?: number;
   scoreDetail?: ScoreDetail;
-  topic?: string | null;
+  topicIds?: string[];
   articleIds?: string[];
   canonicalTitle?: string | null;
   articles?: ArticleInfo[];
@@ -46,61 +46,90 @@ type Cluster = {
 export default function Clusters() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const topicFromUrl = searchParams.get('topic') || undefined;
-  const categoryFromUrl = searchParams.get('category') || undefined;
-  const [category, setCategory] = useState<string>(categoryFromUrl || 'all');
-  const [topic, setTopic] = useState<string | undefined>(topicFromUrl);
+  const topicsFromUrl = searchParams.getAll('topic');
+  const categoriesFromUrl = searchParams.getAll('category');
+  const teamFromUrl = searchParams.get('team') ?? '';
+  const competitionFromUrl = searchParams.get('competition') ?? '';
+  const playerFromUrl = searchParams.get('player') ?? '';
+  const hoursFromUrl = searchParams.get('hours') ?? '';
+  const [categories, setCategories] = useState<string[]>(
+    categoriesFromUrl.length > 0 ? categoriesFromUrl : []
+  );
+  const [selectedTopics, setSelectedTopics] = useState<string[]>(
+    topicsFromUrl.length > 0 ? topicsFromUrl : []
+  );
   const [topics, setTopics] = useState<{ id: string; label: string }[]>([]);
-  const [categories, setCategories] = useState<{
+  const [categoryList, setCategoryList] = useState<{
     id: string;
     label: string;
     topicIds: string[];
   }[]>([]);
 
   useEffect(() => {
-    setTopic(topicFromUrl);
-    if (categoryFromUrl) setCategory(categoryFromUrl);
-  }, [topicFromUrl, categoryFromUrl]);
+    const cats = searchParams.getAll('category');
+    const tops = searchParams.getAll('topic');
+    setCategories(cats.length > 0 ? cats : []);
+    setSelectedTopics(tops.length > 0 ? tops : []);
+  }, [searchParams]);
 
+  const hasEntityFilter = !!(teamFromUrl || competitionFromUrl || playerFromUrl);
+  const hoursNum = hoursFromUrl ? parseInt(hoursFromUrl, 10) : undefined;
+  const hasTimeFilter = !!hoursNum && hoursNum > 0;
   const filterParams =
-    category && category !== 'all'
-      ? { category }
-      : topic
-        ? { topic }
-        : undefined;
+    categories.length > 0 || selectedTopics.length > 0 || hasEntityFilter || hasTimeFilter
+      ? {
+          ...(categories.length > 0 && { category: categories }),
+          ...(selectedTopics.length > 0 && { topic: selectedTopics }),
+          ...(teamFromUrl && { team: teamFromUrl }),
+          ...(competitionFromUrl && { competition: competitionFromUrl }),
+          ...(playerFromUrl && { player: playerFromUrl }),
+          ...(hasTimeFilter && { hours: hoursNum }),
+        }
+      : undefined;
 
   const {
     data: clusters,
     loading,
     refetch,
     pagination,
-  } = usePagination<Cluster>(getClusters, 20, filterParams, [category, topic]);
+  } = usePagination<Cluster>(getClusters, 20, filterParams, [
+    categories.join(','),
+    selectedTopics.join(','),
+    teamFromUrl,
+    competitionFromUrl,
+    playerFromUrl,
+    hoursFromUrl,
+  ]);
 
   useEffect(() => {
     Promise.all([getClustersTopics(), getClustersCategories()])
       .then(([topicsRes, catsRes]) => {
         setTopics(topicsRes.data ?? []);
-        setCategories(catsRes.data ?? []);
+        setCategoryList(catsRes.data ?? []);
       })
       .catch(() => {});
   }, []);
 
   const arr = (clusters ?? []) as Cluster[];
 
-  const categoryOptions = [
-    { value: 'all', label: 'Tất cả nhóm' },
-    ...categories.map((c) => ({ value: c.id, label: c.label })),
-  ];
+  const categoryOptions = categoryList.map((c) => ({ value: c.id, label: c.label }));
 
   const topicOptions = topics
     .filter((t) => t.id !== 'other')
     .map((t) => ({ value: t.id, label: t.label }));
 
-  const hasFilter = category !== 'all' || !!topic;
+  const hasFilter = categories.length > 0 || selectedTopics.length > 0 || hasEntityFilter || hasTimeFilter;
+
+  const TIME_OPTIONS = [
+    { value: '', label: 'Tất cả thời gian' },
+    { value: '24', label: '24h gần nhất' },
+    { value: '168', label: '7 ngày' },
+    { value: '720', label: '30 ngày' },
+  ];
 
   const clearFilters = () => {
-    setCategory('all');
-    setTopic(undefined);
+    setCategories([]);
+    setSelectedTopics([]);
     setSearchParams({});
   };
 
@@ -108,39 +137,72 @@ export default function Clusters() {
     <Card title="Tin gom" styles={{ header: { padding: '16px 20px' } }}>
       <PageToolbar onRefresh={refetch} loading={loading}>
         <Select
+          mode="multiple"
           size="small"
           placeholder="Lọc theo nhóm"
-          style={{ width: 160 }}
-          value={category}
+          style={{ width: 240 }}
+          value={categories}
           onChange={(v) => {
-            const val = v ?? 'all';
-            setCategory(val);
-            setTopic(undefined);
+            const val = (v ?? []) as string[];
+            setCategories(val);
             const next = new URLSearchParams(searchParams);
-            if (val !== 'all') next.set('category', val);
-            else next.delete('category');
+            next.delete('category');
             next.delete('topic');
+            val.forEach((id) => next.append('category', id));
+            selectedTopics.forEach((id) => next.append('topic', id));
             setSearchParams(next);
           }}
           options={categoryOptions}
+          showSearch
+          filterOption={(input, opt) =>
+            (opt?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())
+          }
+          maxTagCount="responsive"
         />
         <Select
+          mode="multiple"
           size="small"
           placeholder="Lọc theo chủ đề"
-          allowClear
-          style={{ width: 160 }}
-          value={topic ?? undefined}
+          style={{ width: 240 }}
+          value={selectedTopics}
           onChange={(v) => {
-            setTopic(v ?? undefined);
-            if (v) setCategory('all');
+            const val = (v ?? []) as string[];
+            setSelectedTopics(val);
             const next = new URLSearchParams(searchParams);
-            if (v) next.set('topic', v);
-            else next.delete('topic');
             next.delete('category');
+            next.delete('topic');
+            categories.forEach((id) => next.append('category', id));
+            val.forEach((id) => next.append('topic', id));
             setSearchParams(next);
           }}
           options={topicOptions}
+          showSearch
+          filterOption={(input, opt) =>
+            (opt?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())
+          }
+          maxTagCount="responsive"
         />
+        <Select
+          size="small"
+          placeholder="Thời gian"
+          style={{ width: 140 }}
+          value={hoursFromUrl}
+          onChange={(v) => {
+            const next = new URLSearchParams(searchParams);
+            if (v) next.set('hours', String(v));
+            else next.delete('hours');
+            setSearchParams(next);
+          }}
+          options={TIME_OPTIONS}
+          allowClear
+        />
+        {(teamFromUrl || competitionFromUrl || playerFromUrl) && (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+            {teamFromUrl && <Tag color="blue">Đội: {teamFromUrl}</Tag>}
+            {competitionFromUrl && <Tag color="green">Giải: {competitionFromUrl}</Tag>}
+            {playerFromUrl && <Tag color="orange">Cầu thủ: {playerFromUrl}</Tag>}
+          </span>
+        )}
         {hasFilter && (
           <Button type="link" size="small" onClick={clearFilters} style={{ padding: '0 4px' }}>
             Xóa lọc
@@ -222,6 +284,14 @@ export default function Clusters() {
         }}
         columns={[
           {
+            title: 'ID',
+            dataIndex: 'id',
+            key: 'id',
+            width: 160,
+            ellipsis: true,
+            copyable: true,
+          },
+          {
             title: 'Tiêu đề',
             dataIndex: 'canonicalTitle',
             key: 'title',
@@ -234,14 +304,18 @@ export default function Clusters() {
           },
           {
             title: 'Chủ đề',
-            dataIndex: 'topic',
-            key: 'topic',
-            width: 130,
+            dataIndex: 'topicIds',
+            key: 'topicIds',
+            width: 180,
             render: (_: unknown, r: Cluster) =>
-              r.topic ? (
-                <Tag color={TOPIC_COLORS[r.topic] ?? 'default'}>
-                  {topics.find((t) => t.id === r.topic)?.label ?? r.topic}
-                </Tag>
+              r.topicIds?.length ? (
+                <span style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                  {r.topicIds.map((tid) => (
+                    <Tag key={tid} color={TOPIC_COLORS[tid] ?? 'default'}>
+                      {topics.find((t) => t.id === tid)?.label ?? tid}
+                    </Tag>
+                  ))}
+                </span>
               ) : (
                 '-'
               ),

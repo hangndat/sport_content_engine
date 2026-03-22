@@ -259,7 +259,7 @@ export default function Topics() {
         onOk={topicCrud.handleSave}
         onCancel={topicCrud.closeModal}
         confirmLoading={topicCrud.saving}
-        destroyOnClose={false}
+        destroyOnHidden={false}
       >
         <Form form={topicForm} layout="vertical">
           <Form.Item name="id" label="ID" rules={[{ required: !topicCrud.editing }]}>
@@ -280,7 +280,7 @@ export default function Topics() {
         onOk={ruleCrud.handleSave}
         onCancel={ruleCrud.closeModal}
         confirmLoading={ruleCrud.saving}
-        destroyOnClose={false}
+        destroyOnHidden={false}
         width={520}
       >
         <Form form={ruleForm} layout="vertical">

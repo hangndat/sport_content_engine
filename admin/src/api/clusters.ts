@@ -3,8 +3,12 @@ import { API_BASE, buildQueryString } from './client';
 export async function getClusters(params?: {
   limit?: number;
   offset?: number;
-  topic?: string;
-  category?: string;
+  topic?: string | string[];
+  category?: string | string[];
+  team?: string;
+  competition?: string;
+  player?: string;
+  hours?: number;
 }) {
   const q = buildQueryString(params ?? {});
   const res = await fetch(`${API_BASE}/drafts/clusters/top${q}`);

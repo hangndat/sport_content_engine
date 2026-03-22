@@ -1,6 +1,6 @@
 import { db, storyClusters, articles } from "../db/index.js";
 import { eq, inArray } from "drizzle-orm";
-import { inferTopic } from "../services/TopicService.js";
+import { inferTopics } from "../services/TopicService.js";
 import { fetchArticleContent } from "../lib/articleFetcher.js";
 
 export interface EnrichedCluster {
@@ -51,8 +51,13 @@ export class EnrichmentService {
       .filter(Boolean) as string[];
     const competition = competitions[0];
 
+    const allTopicIds = new Set<string>();
+    for (const art of arts) {
+      const tops = await inferTopics(art);
+      for (const t of tops) allTopicIds.add(t);
+    }
+    const topicIds = allTopicIds.size > 0 ? [...allTopicIds] : ["other"];
     const canonical = arts.find((a) => a.id === cluster.canonicalArticleId) ?? arts[0];
-    const topic = await inferTopic(canonical ?? {});
 
     // Khi tạo draft, fetch full content từ URL để có nhiều context hơn mô tả RSS
     let summary = canonical.content.slice(0, 500);
@@ -65,7 +70,7 @@ export class EnrichmentService {
 
     await db
       .update(storyClusters)
-      .set({ enrichedAt: new Date(), topic })
+      .set({ enrichedAt: new Date(), topicIds })
       .where(eq(storyClusters.id, clusterId));
 
     return {

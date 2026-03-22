@@ -81,27 +81,35 @@ function testRule(
   return false;
 }
 
-/** Suy luận topic từ article — dùng rules trong DB */
-export async function inferTopic(article: ArticleForTopic): Promise<string> {
+/** Suy luận tất cả topic khớp từ article — dùng rules trong DB */
+export async function inferTopics(article: ArticleForTopic): Promise<string[]> {
   const rules = await loadRules();
+  const ids = new Set<string>();
   for (const rule of rules) {
-    if (testRule(rule, article)) return rule.topicId;
+    if (testRule(rule, article)) ids.add(rule.topicId);
   }
-  return "other";
+  return ids.size > 0 ? [...ids] : ["other"];
 }
 
 /** Sync version — dùng khi đã có rules loaded. Dành cho batch. */
-export function inferTopicSync(article: ArticleForTopic, rules: CachedRule[]): string {
+export function inferTopicsSync(article: ArticleForTopic, rules: CachedRule[]): string[] {
+  const ids = new Set<string>();
   for (const rule of rules) {
-    if (testRule(rule, article)) return rule.topicId;
+    if (testRule(rule, article)) ids.add(rule.topicId);
   }
-  return "other";
+  return ids.size > 0 ? [...ids] : ["other"];
+}
+
+/** @deprecated Dùng inferTopics. Giữ để tương thích — trả topic chính (đầu tiên khớp). */
+export async function inferTopic(article: ArticleForTopic): Promise<string> {
+  const topics = await inferTopics(article);
+  return topics[0] ?? "other";
 }
 
 /** Load rules và infer (dùng trong batch) */
-export async function loadRulesAndInfer(article: ArticleForTopic): Promise<string> {
+export async function loadRulesAndInfer(article: ArticleForTopic): Promise<string[]> {
   const rules = await loadRules();
-  return inferTopicSync(article, rules);
+  return inferTopicsSync(article, rules);
 }
 
 export async function getTopicLabels(): Promise<Map<string, string>> {
