@@ -1,0 +1,1 @@
+ALTER TABLE "drafts" ADD COLUMN "tone" text DEFAULT 'neutral';

@@ -1,0 +1,14 @@
+---
+description: n8n workflow conventions
+globs: n8n/**/*.json,**/workflows/**/*.json
+alwaysApply: false
+---
+
+# n8n Workflow
+
+- Node name: unique, dễ đọc. Connections dùng `name` không phải `id`
+- Position: cách nhau ~200px
+- Code node: return array of `{ json, binary? }`
+- Expression: `{{ $json.fieldName }}`, `{{ $input.all() }}`
+
+Workflows cần: Schedule → POST /ingest/fetch | Webhook draft → notify | Approve → POST /publish

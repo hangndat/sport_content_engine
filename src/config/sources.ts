@@ -1,0 +1,111 @@
+import type { SourceConfig } from "../connectors/base.js";
+
+export const defaultSources: SourceConfig[] = [
+  // Tier 2 – Báo lớn, nhà báo uy tín
+  {
+    id: "vnexpress-thethao",
+    type: "rss",
+    tier: 2,
+    url: "https://vnexpress.net/rss/the-thao.rss",
+    rateLimitMinutes: 15,
+    enabled: true,
+  },
+  {
+    id: "tuoitre-thethao",
+    type: "rss",
+    tier: 2,
+    url: "https://tuoitre.vn/rss/the-thao.rss",
+    rateLimitMinutes: 15,
+    enabled: true,
+  },
+  {
+    id: "dantri-thethao",
+    type: "rss",
+    tier: 2,
+    url: "https://dantri.com.vn/rss/the-thao.rss",
+    rateLimitMinutes: 15,
+    enabled: true,
+  },
+  {
+    id: "zing-thethao",
+    type: "rss",
+    tier: 2,
+    url: "https://zingnews.vn/rss/the-thao.rss",
+    rateLimitMinutes: 15,
+    enabled: true,
+  },
+  {
+    id: "thanhnien-thethao",
+    type: "rss",
+    tier: 2,
+    url: "https://thanhnien.vn/rss/the-thao.rss",
+    rateLimitMinutes: 15,
+    enabled: true,
+  },
+  {
+    id: "vietnamnet-thethao",
+    type: "rss",
+    tier: 2,
+    url: "https://vietnamnet.vn/rss/the-thao.rss",
+    rateLimitMinutes: 15,
+    enabled: true,
+  },
+  {
+    id: "nld-thethao",
+    type: "rss",
+    tier: 2,
+    url: "https://nld.com.vn/rss/the-thao.rss",
+    rateLimitMinutes: 15,
+    enabled: true,
+  },
+  // Tier 3 – Chuyên thể thao
+  {
+    id: "thethao247-thethao",
+    type: "rss",
+    tier: 3,
+    url: "https://thethao247.vn/the-thao-24h.rss",
+    rateLimitMinutes: 15,
+    enabled: true,
+  },
+  {
+    id: "thethao247-bongda",
+    type: "rss",
+    tier: 3,
+    url: "https://thethao247.vn/bong-da.rss",
+    rateLimitMinutes: 15,
+    enabled: true,
+  },
+  {
+    id: "bongda24h-trangchu",
+    type: "rss",
+    tier: 3,
+    url: "https://bongda24h.vn/RSS/1.rss",
+    rateLimitMinutes: 15,
+    enabled: true,
+  },
+  {
+    id: "bongda24h-vietnam",
+    type: "rss",
+    tier: 3,
+    url: "https://bongda24h.vn/RSS/168.rss",
+    rateLimitMinutes: 15,
+    enabled: true,
+  },
+  {
+    id: "bongda24h-tinnong",
+    type: "rss",
+    tier: 3,
+    url: "https://bongda24h.vn/RSS/279.rss",
+    rateLimitMinutes: 15,
+    enabled: true,
+  },
+  // Bị tắt / cần kiểm tra
+  {
+    id: "bongdaplus-rss",
+    type: "rss",
+    tier: 2,
+    url: "https://bongdaplus.vn/rss",
+    rateLimitMinutes: 15,
+    enabled: false, // trả về HTML, không phải RSS chuẩn
+  },
+];

@@ -1,0 +1,23 @@
+---
+description: Kiến trúc Sport Content Engine - connectors, services, agents
+globs: src/**/*.ts
+alwaysApply: false
+---
+
+# Architecture Conventions
+
+## Layers
+
+- **Connectors**: Một concern mỗi connector (rss, scraper, api). Implement `IConnector.fetch()` → raw items.
+- **Services**: Orchestrate pipeline. Không chứa business logic chi tiết trong controller.
+- **Agents**: Mỗi agent một file. Input/Output rõ ràng, có thể gọi độc lập.
+
+## Naming
+
+- Services: `IngestionService`, `DedupService`, `RankingService`
+- Connectors: `RssConnector`, `ScraperConnector`
+- Agents: `FactExtractor`, `ContentWriter`, `Guardrail`
+
+## Constants
+
+Dùng constants thay vì magic strings: `ContentType.NEWS`, `SourceTier.ONE`, `ContentFormat.SHORT_HOT`

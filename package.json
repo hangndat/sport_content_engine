@@ -1,0 +1,49 @@
+{
+  "name": "sport-content-engine",
+  "version": "0.1.0",
+  "description": "Hệ thống biên tập nội dung thể thao tự động có kiểm duyệt",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "admin": "cd admin && npm run dev",
+    "admin:build": "cd admin && npm run build",
+    "build": "npm run admin:build && tsc",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "db:init": "tsx scripts/db-init.ts",
+    "db:clean": "tsx scripts/clean-data.ts",
+    "lint": "eslint src --ext .ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.700.0",
+    "bullmq": "^5.25.0",
+    "cheerio": "^1.0.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "drizzle-orm": "^0.38.0",
+    "express": "^4.21.0",
+    "fast-xml-parser": "^5.1.0",
+    "ioredis": "^5.4.1",
+    "openai": "^4.73.0",
+    "pg": "^8.13.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.0",
+    "@types/pg": "^8.20.0",
+    "drizzle-kit": "^0.30.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

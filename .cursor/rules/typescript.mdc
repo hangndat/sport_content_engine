@@ -1,0 +1,25 @@
+---
+description: TypeScript conventions cho Sport Content Engine
+globs: src/**/*.ts
+alwaysApply: false
+---
+
+# TypeScript Conventions
+
+- ESM: `"type": "module"`, dùng `.js` trong import path khi import local
+- Strict mode: bật trong tsconfig
+- Async: dùng `async/await`, không mix callback
+- Error: throw typed error, log context trước khi rethrow
+
+```typescript
+// Import với .js
+import { foo } from "./bar.js";
+
+// Error handling
+try {
+  await fetch();
+} catch (e) {
+  logger.error("Fetch failed", { error: e, source });
+  throw new IngestionError("Unable to fetch", { cause: e });
+}
+```

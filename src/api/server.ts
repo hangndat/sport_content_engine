@@ -1,0 +1,106 @@
+import express from "express";
+import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
+import { sql, eq } from "drizzle-orm";
+import { db } from "../db/index.js";
+import { articles, storyClusters, drafts, sources, posts } from "../db/index.js";
+import { getModerationMode } from "../lib/moderation.js";
+import { ingestRoutes } from "./routes/ingest.js";
+import { draftRoutes } from "./routes/drafts.js";
+import { publishRoutes } from "./routes/publish.js";
+import { sourcesRoutes } from "./routes/sources.js";
+import { articlesRoutes } from "./routes/articles.js";
+import { clusterCategoriesRoutes } from "./routes/clusterCategories.js";
+import { topicsRoutes } from "./routes/topics.js";
+import { topicRulesRoutes } from "./routes/topicRules.js";
+import { writerHistoryRoutes } from "./routes/writerHistory.js";
+import { gptWriterConfigRoutes } from "./routes/gptWriterConfig.js";
+import { TrendService } from "../services/TrendService.js";
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+app.use("/ingest", ingestRoutes);
+app.use("/drafts", draftRoutes);
+app.use("/publish", publishRoutes);
+app.use("/sources", sourcesRoutes);
+app.use("/articles", articlesRoutes);
+app.use("/cluster-categories", clusterCategoriesRoutes);
+app.use("/topics", topicsRoutes);
+app.use("/topic-rules", topicRulesRoutes);
+app.use("/writer-history", writerHistoryRoutes);
+app.use("/config/gpt-writer", gptWriterConfigRoutes);
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const adminDist = path.join(__dirname, "../../admin/dist");
+
+app.get("/", (_req, res) => res.redirect("/admin"));
+app.get("/health", (_req, res) => res.json({ status: "ok" }));
+app.get("/config", (_req, res) => res.json({ moderationMode: getModerationMode() }));
+
+app.get("/trends", async (req, res) => {
+  try {
+    const hours = Math.min(168, parseInt(String(req.query.hours || 24), 10) || 24);
+    const limit = Math.min(20, parseInt(String(req.query.limit || 10), 10) || 10);
+    const trends = await new TrendService().getTrends(hours, limit);
+    res.json(trends);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to get trends" });
+  }
+});
+
+app.get("/trends/daily", async (req, res) => {
+  try {
+    const days = Math.min(30, parseInt(String(req.query.days || 7), 10) || 7);
+    const limit = Math.min(15, parseInt(String(req.query.limit || 5), 10) || 5);
+    const type = String(req.query.type || "all");
+    const validType =
+      type === "teams" || type === "players" || type === "competitions" ? type : "all";
+    const data = await new TrendService().getTrendsByDay({
+      days,
+      limit,
+      type: validType,
+    });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to get daily trends" });
+  }
+});
+
+app.get("/stats", async (_req, res) => {
+  try {
+    const [a, c, d, s, p, pending, approved] = await Promise.all([
+      db.select({ count: sql<number>`count(*)::int` }).from(articles),
+      db.select({ count: sql<number>`count(*)::int` }).from(storyClusters),
+      db.select({ count: sql<number>`count(*)::int` }).from(drafts),
+      db.select({ count: sql<number>`count(*)::int` }).from(sources),
+      db.select({ count: sql<number>`count(*)::int` }).from(posts),
+      db.select({ count: sql<number>`count(*)::int` }).from(drafts).where(eq(drafts.status, "pending")),
+      db.select({ count: sql<number>`count(*)::int` }).from(drafts).where(eq(drafts.status, "approved")),
+    ]);
+    res.json({
+      articles: Number(a[0]?.count ?? 0),
+      clusters: Number(c[0]?.count ?? 0),
+      drafts: Number(d[0]?.count ?? 0),
+      draftsPending: Number(pending[0]?.count ?? 0),
+      draftsApproved: Number(approved[0]?.count ?? 0),
+      sources: Number(s[0]?.count ?? 0),
+      posts: Number(p[0]?.count ?? 0),
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to get stats" });
+  }
+});
+app.use("/admin", express.static(adminDist, { index: false }));
+app.get(/^\/admin(\/.*)?$/, (_req, res) => {
+  res.sendFile(path.join(adminDist, "index.html"));
+});
+
+export async function startServer(): Promise<void> {
+  const port = parseInt(process.env.PORT ?? "3000", 10);
+  app.listen(port, () => {
+    console.log(`Server listening on http://localhost:${port}`);
+  });
+}

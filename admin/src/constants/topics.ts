@@ -1,0 +1,17 @@
+export const TOPIC_COLORS: Record<string, string> = {
+  vleague: 'green',
+  nha: 'blue',
+  c1: 'gold',
+  c2: 'orange',
+  laliga: 'magenta',
+  seriea: 'geekblue',
+  bundesliga: 'volcano',
+  ligue1: 'purple',
+  caf: 'orange',
+  sea_games: 'cyan',
+  dtvn: 'red',
+  transfer: 'purple',
+  schedule: 'cyan',
+  match_result: 'lime',
+  other: 'default',
+};

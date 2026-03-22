@@ -1,0 +1,14 @@
+sources:
+  - id: bongdaplus-rss
+    type: rss
+    tier: 2
+    url: https://bongdaplus.vn/rss
+    rateLimitMinutes: 15
+    enabled: true
+
+  - id: example-scraper
+    type: scraper
+    tier: 2
+    url: https://example.com/sports
+    rateLimitMinutes: 30
+    enabled: false

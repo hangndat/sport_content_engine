@@ -1,0 +1,36 @@
+{
+  "name": "Sport Content - Ingest Schedule",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "field": "hours", "hoursInterval": 2 }]
+        }
+      },
+      "name": "Every 2 hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [0, 0],
+      "id": "trigger-1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://localhost:3000/ingest/fetch",
+        "options": {}
+      },
+      "name": "Trigger Ingest",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0],
+      "id": "http-1"
+    }
+  ],
+  "connections": {
+    "Every 2 hours": {
+      "main": [[{ "node": "Trigger Ingest", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}
