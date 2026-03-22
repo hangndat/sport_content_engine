@@ -17,7 +17,7 @@ export default function Articles() {
 
   return (
     <>
-      <Card title="Bài viết">
+      <Card title="Bài viết" styles={{ header: { padding: '16px 20px' } }}>
         <PageToolbar onRefresh={refetch} loading={loading} />
         <ProTable<ArticleRow>
           search={false}

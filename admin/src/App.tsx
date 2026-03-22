@@ -1,7 +1,6 @@
-import { useState } from 'react';
-import { BrowserRouter, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { ProLayout, PageContainer, ProConfigProvider, viVNIntl } from '@ant-design/pro-components';
-import { App as AntdApp, Button, ConfigProvider, Tag } from 'antd';
+import { App as AntdApp, Button, ConfigProvider } from 'antd';
 import viVN from 'antd/locale/vi_VN';
 import {
   ThunderboltOutlined,
@@ -31,9 +30,6 @@ import ClusterCategories from './pages/ClusterCategories';
 import Topics from './pages/Topics';
 import WriterHistory from './pages/WriterHistory';
 import Settings from './pages/Settings';
-import { triggerIngest, getConfig } from './api';
-import { useQuery } from './hooks/useQuery';
-import { MODE_LABELS } from './constants';
 
 /** Menu theo pipeline: Thu thập → Gom tin → Biên tập → Xuất bản */
 const route = {
@@ -63,31 +59,16 @@ const route = {
     { path: '/drafts', name: 'Bản nháp', icon: <FileTextOutlined /> },
     { path: '/writer-history', name: 'Lịch sử viết', icon: <HistoryOutlined /> },
     { path: '/posts', name: 'Bài đã đăng', icon: <SendOutlined /> },
-    { path: '/settings', name: 'Cài đặt GPT', icon: <SettingOutlined /> },
+    { path: '/settings', name: 'Cài đặt', icon: <SettingOutlined /> },
   ],
 };
 
 function LayoutContent() {
   const location = useLocation();
-  const { message } = AntdApp.useApp();
-  const [ingesting, setIngesting] = useState(false);
-  const { data: config } = useQuery(getConfig);
-  const mode = (config as { moderationMode?: string })?.moderationMode ?? 'A';
+  const navigate = useNavigate();
 
-  const handleIngest = async () => {
-    setIngesting(true);
-    try {
-      const data = await triggerIngest();
-      if (data.ok) {
-        message.success(`${data.articlesFetched} articles, ${data.clustersCreated} clusters`);
-      } else {
-        message.error(data.error || 'Ingest failed');
-      }
-    } catch {
-      message.error('Ingest failed');
-    } finally {
-      setIngesting(false);
-    }
+  const handleIngest = () => {
+    navigate('/crawl?start=1');
   };
 
   return (
@@ -111,16 +92,7 @@ function LayoutContent() {
         title: 'Admin',
       }}
       actionsRender={() => [
-        <Tag key="mode" color={mode === 'A' ? 'orange' : mode === 'B' ? 'blue' : 'green'}>
-          {MODE_LABELS[mode] ?? mode}
-        </Tag>,
-        <Button
-          key="ingest"
-          type="primary"
-          icon={<ThunderboltOutlined />}
-          loading={ingesting}
-          onClick={handleIngest}
-        >
+        <Button key="ingest" type="primary" icon={<ThunderboltOutlined />} onClick={handleIngest}>
           Crawl ngay
         </Button>,
       ]}

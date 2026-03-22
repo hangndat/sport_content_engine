@@ -19,6 +19,22 @@ Hệ thống biên tập nội dung thể thao tự động có kiểm duyệt, 
 | 5 | Mode C, A/B caption, performance tracking |
 | 6 | Admin React + Ant Design Pro, Dockerfile, deploy |
 
+## Phase 7 – Viral scoring ✓
+
+| Bước | Nội dung |
+|------|----------|
+| 7.1 | lib/viralSignals.ts: hot entities, competition, contentType, cross-source bonuses ✓ |
+| 7.2 | RankingService: gộp viral bonuses vào score, sửa confirmBonus (chỉ tính 1 lần/cluster) ✓ |
+| 7.3 | AngleSelector: nhận cluster context → ưu tiên short_hot khi viral cao ✓ |
+| 7.4 | createDraftFromCluster: publishPriority từ score + viral thay vì hardcode medium ✓ |
+| 7.5 | scripts/backfill-cluster-scores.ts + npm run db:backfill-scores ✓ |
+
+## Phase 8 – Dashboard Enhancement
+
+Bổ sung metrics cho trang Tổng quan: crawl gần nhất, clusters chưa có draft, nguồn bật/tắt, subValue 24h.
+
+→ Chi tiết: [plans/PLAN-DASHBOARD.md](./PLAN-DASHBOARD.md)
+
 ## Tài liệu
 
 - [docs/architecture/](../docs/architecture/) – Kiến trúc chi tiết

@@ -4,6 +4,29 @@ import type { IConnector, SourceConfig } from "./base.js";
 import type { UnifiedArticle } from "../types/index.js";
 import { extractEntitiesFromTitle } from "../lib/entityExtract.js";
 
+/** Parse date từ nhiều format RSS (RFC 2822, dd/mm/yyyy, yyyy/mm/dd). */
+function parsePubDate(str: string): Date | null {
+  if (!str || typeof str !== "string" || !str.trim()) return null;
+  const s = str.trim();
+  let d = new Date(s);
+  if (!Number.isNaN(d.getTime())) return d;
+  // dd/mm/yyyy HH:mm:ss (Tinthethao)
+  const ddmmyyyy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2}):(\d{2})/);
+  if (ddmmyyyy) {
+    const [, dd, mm, yyyy, hh, mi, ss] = ddmmyyyy;
+    d = new Date(parseInt(yyyy!, 10), parseInt(mm!, 10) - 1, parseInt(dd!, 10), parseInt(hh!, 10), parseInt(mi!, 10), parseInt(ss!, 10));
+    if (!Number.isNaN(d.getTime())) return d;
+  }
+  // yyyy/mm/dd HH:mm:ss (Bongda24h)
+  const yyyymmdd = s.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{2}):(\d{2})/);
+  if (yyyymmdd) {
+    const [, yyyy, mm, dd, hh, mi, ss] = yyyymmdd;
+    d = new Date(parseInt(yyyy!, 10), parseInt(mm!, 10) - 1, parseInt(dd!, 10), parseInt(hh!, 10), parseInt(mi!, 10), parseInt(ss!, 10));
+    if (!Number.isNaN(d.getTime())) return d;
+  }
+  return null;
+}
+
 export class RssConnector implements IConnector {
   async fetch(config: SourceConfig): Promise<UnifiedArticle[]> {
     if (!config.url) return [];
@@ -23,25 +46,24 @@ export class RssConnector implements IConnector {
     }
     const arr = Array.isArray(items) ? items : items ? [items] : [];
 
-    return arr.map((item: Record<string, unknown>) =>
-      this.normalize(item, config)
-    );
+    return arr
+      .map((item: Record<string, unknown>) => this.normalize(item, config))
+      .filter((a): a is UnifiedArticle => a != null);
   }
 
-  private normalize(item: Record<string, unknown>, config: SourceConfig): UnifiedArticle {
+  private normalize(
+    item: Record<string, unknown>,
+    config: SourceConfig
+  ): UnifiedArticle | null {
     let link: string = (item.link ?? item.guid ?? "") as string;
     if (typeof link === "object" && link !== null) {
       link = (link as { href?: string }).href ?? "";
     }
     const title = (item.title ?? "") as string;
     const content = (item.description ?? item.content ?? item["content:encoded"] ?? "") as string;
-    let pubDate = (item.pubDate ?? item.published ?? item.updated) as string;
-
-    if (typeof pubDate === "string" && pubDate) {
-      pubDate = new Date(pubDate).toISOString();
-    } else {
-      pubDate = new Date().toISOString();
-    }
+    const pubRaw = (item.pubDate ?? item.published ?? item.updated) as string;
+    const date = parsePubDate(String(pubRaw ?? ""));
+    if (!date) return null;
 
     const hash = createHash("md5").update(link).digest("hex").slice(0, 12);
     const id = `rss-${config.id}-${hash}`;
@@ -53,7 +75,7 @@ export class RssConnector implements IConnector {
       url: link,
       title: this.stripHtml(title),
       content: this.stripHtml(content).slice(0, 10000),
-      publishedAt: new Date(pubDate),
+      publishedAt: date,
       language: "vi",
       contentType: "news",
       teams: teams.length > 0 ? teams : undefined,

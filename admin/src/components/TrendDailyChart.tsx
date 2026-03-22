@@ -1,16 +1,7 @@
-import { useState } from 'react';
-import { Card, Select, Skeleton, Row, Col, Typography } from 'antd';
+import { useMemo, useState } from 'react';
+import ReactECharts from 'echarts-for-react';
+import { Card, Select, Skeleton, Row, Col, Space, Typography } from 'antd';
 import { RiseOutlined } from '@ant-design/icons';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
 import { useQuery } from '../hooks/useQuery';
 import { getTrendsDaily, type TrendDailyResponse } from '../api';
 
@@ -34,15 +25,29 @@ function ChartPanel({
   dates: string[];
   loading?: boolean;
 }) {
-  if (series.length === 0) return null;
+  const xData = useMemo(() => dates.map((d) => formatDate(d)), [dates]);
+  const option = useMemo(
+    () => ({
+      grid: { top: 20, right: 20, bottom: 45, left: 45, containLabel: true },
+      xAxis: { type: 'category' as const, data: xData, axisLabel: { fontSize: 11 } },
+      yAxis: { type: 'value' as const, axisLabel: { fontSize: 11 }, splitNumber: 5 },
+      tooltip: { trigger: 'axis' as const },
+      legend: { bottom: 5, left: 'center', textStyle: { fontSize: 11 }, itemGap: 16 },
+      series: series.map((s, i) => ({
+        name: s.name,
+        type: 'line' as const,
+        data: dates.map((d) => s.data.find((x) => x.date === d)?.count ?? 0),
+        smooth: false,
+        symbol: 'circle',
+        symbolSize: 6,
+        lineStyle: { width: 2, color: COLORS[i % COLORS.length] },
+        itemStyle: { color: COLORS[i % COLORS.length] },
+      })),
+    }),
+    [series, dates, xData]
+  );
 
-  const chartData = dates.map((date) => {
-    const point: Record<string, string | number> = { date: formatDate(date) };
-    for (const s of series) {
-      point[s.name] = s.data.find((d) => d.date === date)?.count ?? 0;
-    }
-    return point;
-  });
+  if (series.length === 0) return null;
 
   if (loading) {
     return (
@@ -56,28 +61,9 @@ function ChartPanel({
 
   return (
     <Col xs={24} lg={12}>
-      <Card size="small" title={title}>
-        <div style={{ height: 220 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-              <Tooltip formatter={(v) => [v, 'Bài viết']} labelFormatter={(l) => `Ngày ${l}`} />
-              <Legend />
-              {series.map((s, i) => (
-                <Line
-                  key={s.name}
-                  type="monotone"
-                  dataKey={s.name}
-                  stroke={COLORS[i % COLORS.length]}
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                  connectNulls
-                />
-              ))}
-            </LineChart>
-          </ResponsiveContainer>
+      <Card size="small" styles={{ header: { padding: '16px 20px' }, body: { padding: 16 } }} title={title}>
+        <div style={{ width: '100%', minHeight: 240 }}>
+          <ReactECharts option={option} style={{ height: 240 }} opts={{ renderer: 'canvas' }} notMerge />
         </div>
       </Card>
     </Col>
@@ -94,16 +80,35 @@ export default function TrendDailyChart() {
 
   const resp = data as TrendDailyResponse | undefined;
 
+  const chartIconStyle = {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 16,
+    backgroundColor: '#e6f4ff',
+    color: '#1677ff',
+  };
+
   return (
     <Card
+      size="small"
+      styles={{
+        header: { padding: '16px 20px' },
+        body: { padding: 20 },
+      }}
       title={
-        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <RiseOutlined />
+        <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={chartIconStyle}>
+            <RiseOutlined />
+          </span>
           Biến động trend theo ngày
         </span>
       }
       extra={
-        <Row gutter={8} wrap={false}>
+        <Space wrap size={8}>
           <Select
             value={days}
             onChange={setDays}
@@ -112,7 +117,7 @@ export default function TrendDailyChart() {
               { value: 14, label: '14 ngày' },
               { value: 30, label: '30 ngày' },
             ]}
-            style={{ width: 100 }}
+            style={{ minWidth: 90 }}
           />
           <Select
             value={type}
@@ -123,9 +128,9 @@ export default function TrendDailyChart() {
               { value: 'competitions', label: 'Giải đấu' },
               { value: 'players', label: 'Cầu thủ' },
             ]}
-            style={{ width: 120 }}
+            style={{ minWidth: 110 }}
           />
-        </Row>
+        </Space>
       }
     >
       {!resp?.dates?.length && !loading && (

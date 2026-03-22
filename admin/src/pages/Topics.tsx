@@ -135,7 +135,7 @@ export default function Topics() {
 
   return (
     <>
-      <Card title="Chủ đề & Quy tắc suy luận">
+      <Card title="Chủ đề & Quy tắc suy luận" styles={{ header: { padding: '16px 20px' } }}>
         <p style={{ color: '#666', marginBottom: 16 }}>
           Chủ đề suy luận từ bài viết theo các quy tắc (ưu tiên thấp = chạy trước). Chạy{' '}
           <code>npm run db:init</code> nếu chưa có dữ liệu.
@@ -259,7 +259,7 @@ export default function Topics() {
         onOk={topicCrud.handleSave}
         onCancel={topicCrud.closeModal}
         confirmLoading={topicCrud.saving}
-        destroyOnHidden
+        destroyOnClose={false}
       >
         <Form form={topicForm} layout="vertical">
           <Form.Item name="id" label="ID" rules={[{ required: !topicCrud.editing }]}>
@@ -280,7 +280,7 @@ export default function Topics() {
         onOk={ruleCrud.handleSave}
         onCancel={ruleCrud.closeModal}
         confirmLoading={ruleCrud.saving}
-        destroyOnHidden
+        destroyOnClose={false}
         width={520}
       >
         <Form form={ruleForm} layout="vertical">

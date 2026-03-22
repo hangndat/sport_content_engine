@@ -1,5 +1,6 @@
 import { App as AntdApp, Card, Button, Tag, Typography, List, Tooltip } from 'antd';
 import { ArrowLeftOutlined, FileAddOutlined, FileTextOutlined, LinkOutlined } from '@ant-design/icons';
+import { ScoreDetailBlock } from '../components/ScoreDetailBlock';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { getCluster } from '../api';
@@ -7,9 +8,24 @@ import { TOPIC_COLORS, statusColors } from '../constants';
 
 type ClusterDraft = { id: string; headline: string; status: string; format?: string; createdAt?: string };
 
+type ViralSignals = {
+  hotEntityBonus: number;
+  competitionBonus: number;
+  contentTypeBonus: number;
+  crossSourceBonus: number;
+  totalViralBonus: number;
+};
+type ScoreDetail = {
+  total: number;
+  tierFreshness: number;
+  confirmBonus: number;
+  viralBonus: number;
+  viralSignals: ViralSignals;
+};
 type ClusterDetail = {
   id: string;
   score: number;
+  scoreDetail?: ScoreDetail;
   topic?: string | null;
   topicLabel?: string | null;
   canonicalTitle?: string | null;
@@ -83,10 +99,15 @@ export default function ClusterDetail() {
         </Tooltip>
       </div>
 
-      <Card title={cluster.canonicalTitle ?? cluster.id}>
-        <Typography.Paragraph type="secondary" style={{ marginBottom: 16 }}>
+      <Card title={cluster.canonicalTitle ?? cluster.id} styles={{ header: { padding: '16px 20px' } }}>
+        <Typography.Paragraph type="secondary" style={{ marginBottom: 8 }}>
           Cluster ID: {cluster.id}
         </Typography.Paragraph>
+        {cluster.scoreDetail && (
+          <div style={{ marginBottom: 16 }}>
+            <ScoreDetailBlock scoreDetail={cluster.scoreDetail} />
+          </div>
+        )}
 
         {(cluster.drafts?.length ?? 0) > 0 && (
           <>

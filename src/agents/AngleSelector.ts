@@ -1,10 +1,17 @@
 import type { ExtractedFacts } from "./FactExtractor.js";
 import type { ContentFormatType } from "../types/index.js";
+import type { EnrichedCluster } from "../services/EnrichmentService.js";
+import {
+  computeViralSignals,
+  isHighViralPotential,
+} from "../lib/viralSignals.js";
 
 export interface PageConfig {
   niche?: string;
   tone?: string;
   formatsAllowed?: ContentFormatType[];
+  /** Cluster context – dùng để angle đúng nội dung viral */
+  cluster?: EnrichedCluster;
 }
 
 export class AngleSelector {
@@ -23,6 +30,26 @@ export class AngleSelector {
 
     if (facts.confidenceScore < 70) {
       return allowed.includes("debate") ? "debate" : allowed[0];
+    }
+
+    const cluster = config?.cluster;
+    if (cluster && allowed.includes("short_hot")) {
+      const viralSignals = computeViralSignals({
+        teams: cluster.teams,
+        players: cluster.players,
+        competition: cluster.competition,
+        contentType: cluster.contentType,
+        distinctSourceCount: cluster.sourceList?.length ?? 0,
+      });
+      if (isHighViralPotential(viralSignals)) {
+        return "short_hot";
+      }
+      if (cluster.contentType === "result") {
+        return "short_hot";
+      }
+      if (cluster.contentType === "rumor" && allowed.includes("debate")) {
+        return "debate";
+      }
     }
 
     const text = facts.keyFacts.join(" ").toLowerCase();

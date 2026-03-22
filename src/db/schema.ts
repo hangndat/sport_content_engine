@@ -143,6 +143,25 @@ export const writerHistory = pgTable("writer_history", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+/** Cấu hình công thức tính điểm cluster – 1 dòng id='default' */
+export const scoreConfig = pgTable("score_config", {
+  id: text("id").primaryKey().default("default"),
+  payload: jsonb("payload").$type<ScoreConfigPayload>().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type ScoreConfigPayload = {
+  tierWeights: Record<string, number>;
+  freshnessHours: number;
+  confirmMaxArticles: number;
+  confirmMultiplier: number;
+  viralBonusCap: number;
+  viralHotEntityMax: number;
+  viralCompetitionBonus: number;
+  viralContentTypeBonus: Record<string, number>;
+  viralCrossSourceBonus: Record<string, number>;
+};
+
 /** Cấu hình GPT cho viết bài (rewrite, create draft) – 1 dòng id='default' */
 export const gptWriterConfig = pgTable("gpt_writer_config", {
   id: text("id").primaryKey().default("default"),

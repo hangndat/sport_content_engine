@@ -48,7 +48,7 @@ export default function ClusterCategories() {
 
   return (
     <>
-      <Card title="Nhóm chủ đề">
+      <Card title="Nhóm chủ đề" styles={{ header: { padding: '16px 20px' } }}>
         <p style={{ color: '#666', marginBottom: 12 }}>
           Nhóm chủ đề hiển thị trên trang Tin gom. Mỗi nhóm gồm nhiều chủ đề (topic).
         </p>
@@ -114,7 +114,7 @@ export default function ClusterCategories() {
         onOk={crud.handleSave}
         onCancel={crud.closeModal}
         confirmLoading={crud.saving}
-        destroyOnHidden
+        destroyOnClose={false}
       >
         <Form form={form} layout="vertical">
           <Form.Item name="id" label="ID" rules={[{ required: !crud.editing }]}>

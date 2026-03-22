@@ -8,8 +8,27 @@ import { db, drafts } from "../db/index.js";
 import { eq } from "drizzle-orm";
 import { shouldAutoPost } from "../lib/moderation.js";
 import { randomUUID } from "crypto";
+import { computeViralSignals } from "../lib/viralSignals.js";
 import type { ContentFormatType } from "../types/index.js";
 import type { Tone } from "./ToneController.js";
+
+type PublishPriority = "low" | "medium" | "high";
+
+function derivePublishPriority(
+  score: number,
+  confidenceScore: number,
+  viralBonus: number,
+  contentType: string,
+  isRumor: boolean
+): PublishPriority {
+  if (isRumor || contentType === "rumor") return "low";
+  const highViral = viralBonus >= 3 && score >= 12;
+  const highConfidence = confidenceScore >= 80;
+  if (highViral && highConfidence) return "high";
+  if (viralBonus >= 1 && score >= 8) return "medium";
+  if (score < 5 || confidenceScore < 50) return "low";
+  return "medium";
+}
 
 export interface CreateDraftOptions {
   format?: ContentFormatType;
@@ -83,7 +102,16 @@ export async function createDraftFromCluster(
     emit,
     "FactExtractor"
   );
-  const format = (options?.format ?? angleSelector.select(facts)) as ContentFormatType;
+  const format = (options?.format ??
+    angleSelector.select(facts, { cluster })) as ContentFormatType;
+
+  const viralSignals = computeViralSignals({
+    teams: cluster.teams,
+    players: cluster.players,
+    competition: cluster.competition,
+    contentType: cluster.contentType,
+    distinctSourceCount: cluster.sourceList?.length ?? 0,
+  });
   const instruction = options?.instruction;
   const variants = await wrapStep(
     "write",
@@ -101,6 +129,13 @@ export async function createDraftFromCluster(
 
   const tone = options?.tone ?? "neutral";
   content = toneController.adjust(content, tone);
+  const preliminaryPriority = derivePublishPriority(
+    cluster.score,
+    facts.confidenceScore,
+    viralSignals.totalViralBonus,
+    cluster.contentType,
+    false
+  );
   const result = await wrapStep(
     "guardrail",
     clusterId,
@@ -113,7 +148,7 @@ export async function createDraftFromCluster(
           sourceList: facts.sourceList,
           teams: facts.teams,
           players: facts.players,
-          publishPriority: "medium",
+          publishPriority: preliminaryPriority,
           format,
         },
         content
@@ -125,6 +160,13 @@ export async function createDraftFromCluster(
   const draftId = randomUUID();
   const isRumor = (result.labels ?? []).includes("rumor");
   const isFabrication = result.fabrication === true;
+  const publishPriority = derivePublishPriority(
+    cluster.score,
+    facts.confidenceScore,
+    viralSignals.totalViralBonus,
+    cluster.contentType,
+    isRumor
+  );
   const finalStatus = isFabrication
     ? "rejected"
     : shouldAutoPost(cluster.score, cluster.sourceTier, cluster.contentType, isRumor)
@@ -146,7 +188,7 @@ export async function createDraftFromCluster(
         teams: facts.teams,
         players: facts.players,
         format,
-        publishPriority: "medium",
+        publishPriority,
         status: finalStatus,
         tone,
         variants: variants as unknown as Record<string, string>,

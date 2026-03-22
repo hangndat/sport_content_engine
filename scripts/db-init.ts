@@ -14,6 +14,7 @@ import {
   runClusterCategories,
   runSources,
   runGptWriterConfig,
+  runScoreConfig,
 } from "./seed/run.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -64,6 +65,14 @@ async function runMigration(pool: pg.Pool): Promise<void> {
       "updated_at" timestamp DEFAULT now()
     )
   `);
+  // 4. Bảng score_config (công thức tính điểm cluster)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS "score_config" (
+      "id" text PRIMARY KEY NOT NULL DEFAULT 'default',
+      "payload" jsonb NOT NULL DEFAULT '{}',
+      "updated_at" timestamp DEFAULT now()
+    )
+  `);
 }
 
 async function main() {
@@ -102,6 +111,10 @@ async function main() {
 
   console.log("5. Seed cấu hình GPT viết bài...");
   await runGptWriterConfig();
+  console.log("   OK");
+
+  console.log("6. Seed cấu hình công thức điểm...");
+  await runScoreConfig();
   console.log("   OK");
 
   console.log("\n=== Xong. DB đã sẵn sàng. ===\n");

@@ -1,5 +1,15 @@
 import { API_BASE, buildQueryString } from './client';
 
+export type SourceArticleCounts = Record<
+  string,
+  { total: number; last24h: number }
+>;
+
+export async function getSourceArticleCounts() {
+  const res = await fetch(`${API_BASE}/sources/article-counts`);
+  return res.json() as Promise<{ data: SourceArticleCounts }>;
+}
+
 export async function getSources(params?: { limit?: number; offset?: number }) {
   const q = buildQueryString(params ?? {});
   const res = await fetch(`${API_BASE}/sources${q}`);

@@ -107,28 +107,48 @@ router.get("/clusters/top", async (req, res) => {
     const arts =
       allArticleIds.length > 0
         ? await db
-            .select({ id: articles.id, title: articles.title, source: articles.source, publishedAt: articles.publishedAt, url: articles.url })
+            .select({
+              id: articles.id,
+              title: articles.title,
+              source: articles.source,
+              publishedAt: articles.publishedAt,
+              url: articles.url,
+              sourceTier: articles.sourceTier,
+              teams: articles.teams,
+              players: articles.players,
+              competition: articles.competition,
+              contentType: articles.contentType,
+            })
             .from(articles)
             .where(inArray(articles.id, allArticleIds))
         : [];
     const artMap = Object.fromEntries(arts.map((a) => [a.id, a]));
 
-    const enriched = clustersPage.map((c) => {
-      const articleList = (c.articleIds ?? []).map((aid) => artMap[aid]).filter(Boolean);
-      const canonical = artMap[c.canonicalArticleId];
-      return {
-        ...c,
-        canonicalTitle: canonical?.title ?? null,
-        draftCount: draftCountMap[c.id] ?? 0,
-        articles: articleList.map((a) => ({
-          id: a.id,
-          title: a.title,
-          source: a.source,
-          publishedAt: a.publishedAt,
-          url: a.url,
-        })),
-      };
-    });
+    const enriched = await Promise.all(
+      clustersPage.map(async (c) => {
+        const articleIds = c.articleIds ?? [];
+        const articleList = articleIds.map((aid) => artMap[aid]).filter(Boolean);
+        const canonical = artMap[c.canonicalArticleId];
+        const scoreDetail = await ranking.getScoreBreakdown(
+          articleIds,
+          c.canonicalArticleId,
+          articleList
+        );
+        return {
+          ...c,
+          canonicalTitle: canonical?.title ?? null,
+          draftCount: draftCountMap[c.id] ?? 0,
+          scoreDetail,
+          articles: articleList.map((a) => ({
+            id: a.id,
+            title: a.title,
+            source: a.source,
+            publishedAt: a.publishedAt,
+            url: a.url,
+          })),
+        };
+      })
+    );
     res.json({ data: enriched, total });
   } catch (err) {
     res.status(500).json({ error: "Failed to list clusters" });
@@ -155,12 +175,22 @@ router.get("/clusters/:id", async (req, res) => {
               source: articles.source,
               publishedAt: articles.publishedAt,
               url: articles.url,
+              sourceTier: articles.sourceTier,
+              teams: articles.teams,
+              players: articles.players,
+              competition: articles.competition,
+              contentType: articles.contentType,
             })
             .from(articles)
             .where(inArray(articles.id, articleList))
         : [];
 
     const canonical = arts.find((a) => a.id === cluster.canonicalArticleId) ?? arts[0];
+    const scoreDetail = await ranking.getScoreBreakdown(
+      articleList,
+      cluster.canonicalArticleId,
+      arts
+    );
     const clusterDrafts = await db
       .select({
         id: drafts.id,
@@ -178,6 +208,7 @@ router.get("/clusters/:id", async (req, res) => {
     res.json({
       id: cluster.id,
       score: cluster.score ?? 0,
+      scoreDetail,
       topic: cluster.topic,
       topicLabel: cluster.topic ? topicLabels[cluster.topic] ?? cluster.topic : null,
       articleIds: articleList,

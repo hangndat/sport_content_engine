@@ -103,7 +103,7 @@ export default function Drafts() {
 
   return (
     <>
-      <Card title="Bản nháp">
+      <Card title="Bản nháp" styles={{ header: { padding: '16px 20px' } }}>
         <PageToolbar onRefresh={refetch} loading={loading}>
           <Select
             size="small"

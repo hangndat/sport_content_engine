@@ -3,9 +3,10 @@
  * Được gọi từ db-init.
  */
 import "dotenv/config";
-import { db, topics, topicRules, clusterCategories, sources, gptWriterConfig } from "../../src/db/index.js";
+import { db, topics, topicRules, clusterCategories, sources, gptWriterConfig, scoreConfig } from "../../src/db/index.js";
 import { eq } from "drizzle-orm";
 import { defaultSources } from "../../src/config/sources.js";
+import { DEFAULT_PAYLOAD } from "../../src/lib/scoreConfig.js";
 import { TOPICS, RULES, CLUSTER_CATEGORIES, GPT_WRITER_CONFIG } from "./data.js";
 
 export async function runTopicsAndRules(): Promise<void> {
@@ -73,6 +74,20 @@ export async function runGptWriterConfig(): Promise<void> {
         basePromptContentWriter: GPT_WRITER_CONFIG.basePromptContentWriter,
         updatedAt: new Date(),
       },
+    });
+}
+
+export async function runScoreConfig(): Promise<void> {
+  const [existing] = await db.select().from(scoreConfig).where(eq(scoreConfig.id, "default"));
+  const payload = existing?.payload
+    ? { ...DEFAULT_PAYLOAD, ...(existing.payload as object) }
+    : DEFAULT_PAYLOAD;
+  await db
+    .insert(scoreConfig)
+    .values({ id: "default", payload, updatedAt: new Date() })
+    .onConflictDoUpdate({
+      target: scoreConfig.id,
+      set: { updatedAt: new Date() },
     });
 }
 

@@ -15,7 +15,9 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:init": "tsx scripts/db-init.ts",
+    "db:seed": "tsx scripts/db-seed.ts",
     "db:clean": "tsx scripts/clean-data.ts",
+    "db:backfill-scores": "tsx scripts/backfill-cluster-scores.ts",
     "lint": "eslint src --ext .ts",
     "test": "vitest run"
   },

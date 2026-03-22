@@ -1,12 +1,13 @@
 import { ProTable } from '@ant-design/pro-components';
-import { App as AntdApp, Card, Tag, Button, Modal, Form, Input, Select, Switch } from 'antd';
+import { App as AntdApp, Card, Tag, Button, Modal, Form, Input, Select, Switch, Tooltip } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { usePagination } from '../hooks/usePagination';
+import { useQuery } from '../hooks/useQuery';
 import { ActionIcon, ActionIconConfirm, TableActions } from '../components/TableActions';
 import { PageToolbar } from '../components/PageToolbar';
 import { EmptyState } from '../components/EmptyState';
 import { useCrudModal } from '../hooks/useCrudModal';
-import { getSources, createSource, updateSource, deleteSource } from '../api';
+import { getSources, getSourceArticleCounts, createSource, updateSource, deleteSource } from '../api';
 import { tierLabels } from '../constants';
 
 type SourceRow = { id: string; type: string; tier: number; url?: string; enabled?: boolean };
@@ -14,6 +15,8 @@ type SourceRow = { id: string; type: string; tier: number; url?: string; enabled
 export default function Sources() {
   const { message } = AntdApp.useApp();
   const { data: sources, loading, refetch, pagination } = usePagination(getSources);
+  const { data: countsData, refetch: refetchCounts } = useQuery(getSourceArticleCounts);
+  const articleCounts = countsData?.data ?? {};
   const [form] = Form.useForm();
 
   const crud = useCrudModal<SourceRow>({
@@ -53,8 +56,14 @@ export default function Sources() {
 
   return (
     <>
-      <Card title="Nguồn tin">
-        <PageToolbar onRefresh={refetch} loading={loading}>
+      <Card title="Nguồn tin" styles={{ header: { padding: '16px 20px' } }}>
+        <PageToolbar
+          onRefresh={() => {
+            refetch();
+            refetchCounts();
+          }}
+          loading={loading}
+        >
           <Button type="primary" size="small" icon={<PlusOutlined />} onClick={crud.handleAdd}>
             Thêm nguồn
           </Button>
@@ -89,6 +98,33 @@ export default function Sources() {
               render: (_: unknown, r: SourceRow) => (
                 <Tag color={r.enabled ? 'success' : 'default'}>{r.enabled ? 'Bật' : 'Tắt'}</Tag>
               ),
+            },
+            {
+              title: (
+                <Tooltip title="Tổng số bài đã crawl từ nguồn này">
+                  <span>Bài crawl</span>
+                </Tooltip>
+              ),
+              key: 'articleCount',
+              width: 100,
+              sorter: (a: SourceRow, b: SourceRow) =>
+                (articleCounts[b.id]?.total ?? 0) - (articleCounts[a.id]?.total ?? 0),
+              render: (_: unknown, r: SourceRow) => {
+                const c = articleCounts[r.id];
+                if (!c) return '–';
+                return (
+                  <Tooltip title={`+${c.last24h} trong 24h gần nhất`}>
+                    <span>
+                      {c.total}
+                      {c.last24h > 0 && (
+                        <span style={{ color: '#52c41a', fontSize: 12, marginLeft: 4 }}>
+                          (+{c.last24h})
+                        </span>
+                      )}
+                    </span>
+                  </Tooltip>
+                );
+              },
             },
             { title: 'URL', dataIndex: 'url', key: 'url', ellipsis: true },
             {
@@ -128,7 +164,7 @@ export default function Sources() {
         onOk={crud.handleSave}
         onCancel={crud.closeModal}
         confirmLoading={crud.saving}
-        destroyOnHidden
+        destroyOnClose={false}
       >
         <Form form={form} layout="vertical">
           <Form.Item name="id" label="ID" rules={[{ required: !crud.editing }]}>

@@ -10,7 +10,7 @@ export default function Posts() {
   const rows = (arr ?? []) as { id: string; platform: string; externalId?: string; publishedAt?: string; status?: string }[];
 
   return (
-    <Card title="Bài đã đăng">
+    <Card title="Bài đã đăng" styles={{ header: { padding: '16px 20px' } }}>
       <PageToolbar onRefresh={refetch} loading={loading} />
       <ProTable
         search={false}

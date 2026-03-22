@@ -1,9 +1,39 @@
 import { Router } from "express";
-import { db, sources } from "../../db/index.js";
-import { eq, sql, asc } from "drizzle-orm";
+import { db, sources, articles } from "../../db/index.js";
+import { eq, sql, asc, gte, isNotNull, and } from "drizzle-orm";
 import { z } from "zod";
 
 const router = Router();
+
+router.get("/article-counts", async (_req, res) => {
+  try {
+    const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const [totalRows, rows24h] = await Promise.all([
+      db
+        .select({ sourceId: articles.sourceId, count: sql<number>`count(*)::int` })
+        .from(articles)
+        .where(isNotNull(articles.sourceId))
+        .groupBy(articles.sourceId),
+      db
+        .select({ sourceId: articles.sourceId, count: sql<number>`count(*)::int` })
+        .from(articles)
+        .where(and(isNotNull(articles.sourceId), gte(articles.createdAt, since24h)))
+        .groupBy(articles.sourceId),
+    ]);
+    const totalMap = new Map(totalRows.map((r) => [r.sourceId!, Number(r.count)]));
+    const map24h = new Map(rows24h.map((r) => [r.sourceId!, Number(r.count)]));
+    const allIds = new Set([...totalMap.keys(), ...map24h.keys()]);
+    const data = Object.fromEntries(
+      [...allIds].map((id) => [
+        id,
+        { total: totalMap.get(id) ?? 0, last24h: map24h.get(id) ?? 0 },
+      ])
+    );
+    res.json({ data });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to get source article counts" });
+  }
+});
 const sourceSchema = z.object({
   id: z.string().min(1).regex(/^[a-z0-9-_]+$/),
   type: z.enum(["rss", "scraper", "api", "social"]),

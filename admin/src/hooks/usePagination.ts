@@ -65,7 +65,7 @@ export function usePagination<T = unknown>(
       pageSize,
       total,
       showSizeChanger: true,
-      pageSizeOptions: ['10', '20', '50', '100'],
+      pageSizeOptions: ['50', '100', '200', '500'],
       onChange: (p: number, ps: number) => {
         setPage(p);
         if (ps !== pageSize) {

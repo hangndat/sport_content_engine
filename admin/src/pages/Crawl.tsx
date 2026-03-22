@@ -1,16 +1,13 @@
 import { ProTable } from '@ant-design/pro-components';
-import { Card, Button, Tag, Typography, Space, Collapse } from 'antd';
+import { Card, Button, Tag, Typography, Space, Collapse, App as AntdApp } from 'antd';
 import { usePagination } from '../hooks/usePagination';
-import { getIngestRuns, triggerIngest } from '../api';
-import { useState } from 'react';
-import {
-  ThunderboltOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined,
-  MinusCircleOutlined,
-} from '@ant-design/icons';
+import { getIngestRuns, triggerIngestStream, type IngestStreamEvent } from '../api';
+import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { ThunderboltOutlined, CheckCircleOutlined, CloseCircleOutlined, MinusCircleOutlined } from '@ant-design/icons';
 import { STATUS_MAP, getStepLabel } from '../constants';
 import { PageToolbar } from '../components/PageToolbar';
+import { CrawlStreamDrawer, type CrawlStreamDrawerProps } from '../components/CrawlStreamDrawer';
 
 type IngestStep = {
   name: string;
@@ -33,16 +30,78 @@ type Run = {
 };
 
 export default function Crawl() {
-  const { data: runs, loading, refetch, pagination } = usePagination<Run>(getIngestRuns);
+  const { message } = AntdApp.useApp();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { data: runs, loading, refetch, pagination } = usePagination<Run>(getIngestRuns, 100);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [ingesting, setIngesting] = useState(false);
+  const [streamSources, setStreamSources] = useState<CrawlStreamDrawerProps['sources']>([]);
+  const [streamSteps, setStreamSteps] = useState<CrawlStreamDrawerProps['steps']>([]);
+  const [streamResult, setStreamResult] = useState<CrawlStreamDrawerProps['result']>();
+  const hasAutoStarted = useRef(false);
 
   const arr = (runs ?? []) as Run[];
+  const hasRunning = arr.some((r) => r.status === 'running');
 
-  const handleCrawl = async () => {
+  useEffect(() => {
+    if (searchParams.get('start') === '1' && !hasAutoStarted.current) {
+      hasAutoStarted.current = true;
+      setSearchParams({}, { replace: true });
+      openDrawerAndCrawl();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams.get('start')]);
+
+  const openDrawerAndCrawl = async () => {
+    if (hasRunning) {
+      setDrawerOpen(true);
+      message.warning('Đang có lần crawl chạy. Vui lòng đợi hoàn thành.');
+      return;
+    }
+    setDrawerOpen(true);
     setIngesting(true);
+    setStreamSources([]);
+    setStreamSteps([]);
+    setStreamResult(undefined);
     try {
-      const data = await triggerIngest();
-      if (data.ok) refetch();
+      const data = await triggerIngestStream((ev: IngestStreamEvent) => {
+        if (ev.t === 'source') {
+          setStreamSources((prev) => [...prev, { sourceId: ev.sourceId, count: ev.count, error: ev.error }]);
+        } else if (ev.t === 'step') {
+          setStreamSteps((prev) => [
+            ...prev,
+            {
+              name: ev.step.name,
+              status: ev.step.status,
+              durationMs: ev.step.durationMs,
+              output: ev.step.output,
+              error: ev.step.error,
+            },
+          ]);
+        } else if (ev.t === 'done') {
+          setStreamResult({
+            ok: ev.result.ok,
+            articlesFetched: ev.result.articlesFetched,
+            clustersCreated: ev.result.clustersCreated,
+            error: ev.result.error,
+          });
+        }
+      });
+      if (data.ok) {
+        message.success('Crawl hoàn thành');
+        refetch();
+      } else if (data.error?.includes('Đang có lần crawl')) {
+        message.warning(data.error);
+        refetch();
+      } else {
+        message.error(data.error ?? 'Crawl thất bại');
+        refetch();
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Crawl thất bại';
+      setStreamResult({ ok: false, error: msg });
+      message.error(msg);
+      refetch();
     } finally {
       setIngesting(false);
     }
@@ -94,18 +153,35 @@ export default function Crawl() {
   const lastSuccess = arr.find((r) => r.status === 'completed');
 
   return (
-    <Card title="Lịch sử crawl">
+    <Card title="Lịch sử crawl" styles={{ header: { padding: '16px 20px' } }}>
       <PageToolbar onRefresh={refetch} loading={loading}>
         <Button
           type="primary"
           size="small"
           icon={<ThunderboltOutlined />}
           loading={ingesting}
-          onClick={handleCrawl}
+          onClick={openDrawerAndCrawl}
         >
           Crawl ngay
         </Button>
       </PageToolbar>
+      {hasRunning && !ingesting && (
+        <div style={{ marginBottom: 16, padding: '12px 16px', background: '#e6f7ff', border: '1px solid #91d5ff', borderRadius: 6 }}>
+          <Typography.Text>
+            Đang crawl... Vui lòng đợi. Bạn có thể refresh trang để cập nhật trạng thái.
+          </Typography.Text>
+        </div>
+      )}
+
+      <CrawlStreamDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        loading={ingesting}
+        sources={streamSources}
+        steps={streamSteps}
+        result={streamResult}
+        runningExternally={hasRunning && !ingesting && streamSources.length === 0 && streamSteps.length === 0}
+      />
       {lastSuccess && arr.length > 0 && (
         <div style={{ marginBottom: 16, padding: '8px 12px', background: '#fafafa', borderRadius: 6 }}>
           <Typography.Text type="secondary">

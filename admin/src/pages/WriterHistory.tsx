@@ -28,6 +28,7 @@ export default function WriterHistory() {
           Lịch sử viết
         </span>
       }
+      styles={{ header: { padding: '16px 20px' } }}
       extra={
         <Select
           placeholder="Loại"

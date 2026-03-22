@@ -34,7 +34,7 @@ export default defineConfig({
     port: 5173,
     open: '/admin/',
     proxy: {
-      '/ingest': { target: 'http://localhost:3000', changeOrigin: true },
+      '/ingest': { target: 'http://localhost:3000', changeOrigin: true, timeout: 0 },
       '/drafts': { target: 'http://localhost:3000', changeOrigin: true },
       '/publish': { target: 'http://localhost:3000', changeOrigin: true },
       '/sources': { target: 'http://localhost:3000', changeOrigin: true },

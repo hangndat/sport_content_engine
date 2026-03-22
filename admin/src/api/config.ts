@@ -5,17 +5,44 @@ export async function getConfig() {
   return res.json();
 }
 
+export type LastIngestRun = {
+  id: string;
+  status: string;
+  startedAt: string;
+  finishedAt?: string;
+  articlesFetched?: number;
+  clustersCreated?: number;
+  error?: string;
+};
+
+export type StatsResponse = {
+  articles: number;
+  clusters: number;
+  drafts: number;
+  draftsPending: number;
+  draftsApproved: number;
+  sources: number;
+  posts: number;
+  sourcesEnabled?: number;
+  clustersWithoutDraft?: number;
+  articlesLast24h?: number;
+  clustersLast24h?: number;
+  postsLast24h?: number;
+  lastIngestRun?: LastIngestRun;
+};
+
 export async function getStats() {
   const res = await fetch(`${API_BASE}/stats`);
-  return res.json() as Promise<{
-    articles: number;
-    clusters: number;
-    drafts: number;
-    draftsPending: number;
-    draftsApproved: number;
-    sources: number;
-    posts: number;
-  }>;
+  return res.json() as Promise<StatsResponse>;
+}
+
+export type ArticlesByDayItem = { date: string; count: number };
+
+export async function getArticlesByDay(params?: { days?: number }) {
+  const q = new URLSearchParams();
+  if (params?.days != null) q.set('days', String(params.days));
+  const res = await fetch(`${API_BASE}/stats/articles-by-day${q ? `?${q}` : ''}`);
+  return res.json() as Promise<{ data: ArticlesByDayItem[] }>;
 }
 
 export async function getTrends(params?: { hours?: number; limit?: number }) {
@@ -77,4 +104,52 @@ export async function updateGptWriterConfig(body: {
     basePromptRewrite: string;
     basePromptContentWriter: string;
   }>;
+}
+
+export type ScoreConfig = {
+  tierWeights: Record<string, number>;
+  freshnessHours: number;
+  confirmMaxArticles: number;
+  confirmMultiplier: number;
+  viralBonusCap: number;
+  viralHotEntityMax: number;
+  viralCompetitionBonus: number;
+  viralContentTypeBonus: Record<string, number>;
+  viralCrossSourceBonus: Record<string, number>;
+};
+
+export async function getScoreConfig() {
+  const res = await fetch(`${API_BASE}/config/score`);
+  return res.json() as Promise<ScoreConfig>;
+}
+
+export async function updateScoreConfig(body: Partial<ScoreConfig>) {
+  const res = await fetch(`${API_BASE}/config/score`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return res.json() as Promise<ScoreConfig>;
+}
+
+export type RescoreResult = {
+  total: number;
+  changed: number;
+  unchanged: number;
+  errors: number;
+  changes: {
+    clusterId: string;
+    canonicalTitle: string;
+    oldScore: number;
+    newScore: number;
+    delta: number;
+  }[];
+};
+
+export async function rescoreClusters() {
+  const res = await fetch(`${API_BASE}/config/score/rescore`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+  return res.json() as Promise<RescoreResult>;
 }

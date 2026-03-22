@@ -1,5 +1,5 @@
 import { ProTable } from '@ant-design/pro-components';
-import { Card, Button, Tag, Typography, Select } from 'antd';
+import { Card, Button, Tag, Typography, Select, Popover } from 'antd';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { usePagination } from '../hooks/usePagination';
 import { ActionIcon, TableActions } from '../components/TableActions';
@@ -9,6 +9,7 @@ import { getClusters, getClustersTopics, getClustersCategories } from '../api';
 import { useState, useEffect } from 'react';
 import { LinkOutlined, FileAddOutlined, FullscreenOutlined } from '@ant-design/icons';
 import { TOPIC_COLORS } from '../constants';
+import { ScoreDetailBlock } from '../components/ScoreDetailBlock';
 
 type ArticleInfo = {
   id: string;
@@ -17,9 +18,24 @@ type ArticleInfo = {
   publishedAt: string;
   url?: string;
 };
+type ViralSignals = {
+  hotEntityBonus: number;
+  competitionBonus: number;
+  contentTypeBonus: number;
+  crossSourceBonus: number;
+  totalViralBonus: number;
+};
+type ScoreDetail = {
+  total: number;
+  tierFreshness: number;
+  confirmBonus: number;
+  viralBonus: number;
+  viralSignals: ViralSignals;
+};
 type Cluster = {
   id: string;
   score?: number;
+  scoreDetail?: ScoreDetail;
   topic?: string | null;
   articleIds?: string[];
   canonicalTitle?: string | null;
@@ -89,7 +105,7 @@ export default function Clusters() {
   };
 
   return (
-    <Card title="Tin gom">
+    <Card title="Tin gom" styles={{ header: { padding: '16px 20px' } }}>
       <PageToolbar onRefresh={refetch} loading={loading}>
         <Select
           size="small"
@@ -142,43 +158,62 @@ export default function Clusters() {
         expandable={{
           expandedRowRender: (c) => {
             const articles = c.articles ?? [];
+            const sd = c.scoreDetail;
             return (
-              <div style={{ padding: '8px 0' }}>
-                <Typography.Text type="secondary" style={{ marginBottom: 8, display: 'block' }}>
-                  Cluster ID: {c.id}
-                </Typography.Text>
-                {articles.map((a) => (
-                  <div
-                    key={a.id}
-                    style={{
-                      padding: '8px 0',
-                      borderBottom: '1px solid #f0f0f0',
-                    }}
-                  >
-                    <Typography.Text strong>{a.title}</Typography.Text>
-                    <div style={{ marginTop: 4 }}>
-                      <Tag>{a.source}</Tag>
-                      <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                        {a.publishedAt
-                          ? new Date(a.publishedAt).toLocaleString('vi-VN', {
-                              dateStyle: 'short',
-                              timeStyle: 'short',
-                            })
-                          : '-'}
+              <div style={{ padding: '16px 20px', background: '#fafafa', borderRadius: 6 }}>
+                <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap' }}>
+                  {sd && (
+                    <div style={{ flex: '1 1 280px', minWidth: 0 }}>
+                      <Typography.Text type="secondary" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                        Chi tiết điểm
                       </Typography.Text>
-                      {a.url && (
-                        <a
-                          href={a.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ marginLeft: 8, fontSize: 12 }}
+                      <div style={{ marginTop: 6 }}>
+                        <ScoreDetailBlock scoreDetail={sd} compact />
+                      </div>
+                    </div>
+                  )}
+                  <div style={{ flex: '2 1 320px', minWidth: 0 }}>
+                    <Typography.Text type="secondary" style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                      Các bài trong cluster ({articles.length})
+                    </Typography.Text>
+                    <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {articles.map((a) => (
+                        <div
+                          key={a.id}
+                          style={{
+                            padding: '10px 12px',
+                            background: '#fff',
+                            borderRadius: 6,
+                            border: '1px solid #f0f0f0',
+                          }}
                         >
-                          <LinkOutlined /> Nguồn gốc
-                        </a>
-                      )}
+                          <Typography.Text strong style={{ fontSize: 13 }}>{a.title}</Typography.Text>
+                          <div style={{ marginTop: 6, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                            <Tag style={{ margin: 0 }}>{a.source}</Tag>
+                            <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                              {a.publishedAt
+                                ? new Date(a.publishedAt).toLocaleString('vi-VN', {
+                                    dateStyle: 'short',
+                                    timeStyle: 'short',
+                                  })
+                                : '-'}
+                            </Typography.Text>
+                            {a.url && (
+                              <a
+                                href={a.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ fontSize: 12 }}
+                              >
+                                <LinkOutlined /> Nguồn
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                ))}
+                </div>
               </div>
             );
           },
@@ -216,7 +251,23 @@ export default function Clusters() {
             dataIndex: 'score',
             key: 'score',
             width: 80,
-            render: (_: unknown, r: Cluster) => <Tag color="blue">{r.score ?? 0}đ</Tag>,
+            render: (_: unknown, r: Cluster) => (
+              <Popover
+                trigger="hover"
+                placement="left"
+                content={
+                  r.scoreDetail ? (
+                    <ScoreDetailBlock scoreDetail={r.scoreDetail} compact />
+                  ) : (
+                    <Typography.Text type="secondary">Chưa có chi tiết</Typography.Text>
+                  )
+                }
+              >
+                <span style={{ cursor: 'help' }}>
+                  <Tag color="blue">{r.score ?? 0}đ</Tag>
+                </span>
+              </Popover>
+            ),
           },
           {
             title: 'Nguồn',

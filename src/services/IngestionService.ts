@@ -13,8 +13,13 @@ export type FetchSourceResult = { sourceId: string; count: number; error?: strin
 export type FetchAllResult = { items: UnifiedArticle[]; perSource: FetchSourceResult[] };
 export type SaveResult = { inserted: number; skipped: number; failed: number };
 
+export type OnSourceComplete = (r: FetchSourceResult) => void;
+
 export class IngestionService {
-  async fetchAll(customSources?: SourceConfig[]): Promise<FetchAllResult> {
+  async fetchAll(
+    customSources?: SourceConfig[],
+    onSourceComplete?: OnSourceComplete
+  ): Promise<FetchAllResult> {
     const list = customSources ?? (await new SourceService().getSources());
     const enabled = list.filter((s) => s.enabled !== false);
     const results: UnifiedArticle[] = [];
@@ -25,11 +30,15 @@ export class IngestionService {
         const connector = getConnector(config.type);
         const items = await connector.fetch(config);
         results.push(...items);
-        perSource.push({ sourceId: config.id, count: items.length });
+        const r: FetchSourceResult = { sourceId: config.id, count: items.length };
+        perSource.push(r);
+        onSourceComplete?.(r);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error(`Ingestion failed for ${config.id}:`, err);
-        perSource.push({ sourceId: config.id, count: 0, error: msg });
+        const r: FetchSourceResult = { sourceId: config.id, count: 0, error: msg };
+        perSource.push(r);
+        onSourceComplete?.(r);
       }
     }
 

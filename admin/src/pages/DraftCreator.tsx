@@ -82,6 +82,7 @@ export default function DraftCreator() {
             Tạo bản nháp
           </span>
         }
+        styles={{ header: { padding: '16px 20px' } }}
       >
         <Typography.Paragraph type="secondary" style={{ marginBottom: 24 }}>
           {cluster.canonicalTitle ?? cluster.id}

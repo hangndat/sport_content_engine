@@ -127,7 +127,7 @@ export default function DraftDetail() {
           alignItems: 'start',
         }}
       >
-        <Card title="Chỉnh sửa">
+        <Card title="Chỉnh sửa" styles={{ header: { padding: '16px 20px' } }}>
           <DraftEditForm
             draft={d}
             editHeadline={editHeadline}
@@ -143,7 +143,7 @@ export default function DraftDetail() {
           />
         </Card>
 
-        <Card title="Preview Facebook">
+        <Card title="Preview Facebook" styles={{ header: { padding: '16px 20px' } }}>
           <div
             style={{
               background: '#f0f2f5',
