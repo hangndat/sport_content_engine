@@ -63,8 +63,9 @@ export default function ClusterCategories() {
           loading={loading}
           dataSource={arr}
           rowKey="id"
+          scroll={{ x: 560 }}
           columns={[
-            { title: 'ID', dataIndex: 'id', key: 'id', width: 140 },
+            { title: 'ID', dataIndex: 'id', key: 'id', width: 140, responsive: ['sm'] },
             { title: 'Tên hiển thị', dataIndex: 'label', key: 'label' },
             {
               title: 'Chủ đề',
@@ -84,6 +85,7 @@ export default function ClusterCategories() {
               dataIndex: 'sortOrder',
               key: 'sortOrder',
               width: 80,
+              responsive: ['md'],
             },
             {
               title: '',

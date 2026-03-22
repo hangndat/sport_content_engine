@@ -160,10 +160,11 @@ export default function Topics() {
                     size="small"
                     search={false}
                     options={false}
+                    scroll={{ x: 400 }}
                     columns={[
-                      { title: 'ID', dataIndex: 'id', key: 'id', width: 140 },
+                      { title: 'ID', dataIndex: 'id', key: 'id', width: 140, responsive: ['sm'] },
                       { title: 'Tên', dataIndex: 'label', key: 'label' },
-                      { title: 'Thứ tự', dataIndex: 'sortOrder', key: 'sortOrder', width: 80 },
+                      { title: 'Thứ tự', dataIndex: 'sortOrder', key: 'sortOrder', width: 80, responsive: ['md'] },
                       {
                         title: '',
                         key: 'actions',
@@ -210,8 +211,9 @@ export default function Topics() {
                     size="small"
                     search={false}
                     options={false}
+                    scroll={{ x: 600 }}
                     columns={[
-                      { title: 'Chủ đề', dataIndex: 'topicId', key: 'topicId', width: 120 },
+                      { title: 'Chủ đề', dataIndex: 'topicId', key: 'topicId', width: 120, responsive: ['sm'] },
                       { title: 'Loại quy tắc', dataIndex: 'ruleType', key: 'ruleType', width: 140 },
                       {
                         title: 'Giá trị',
@@ -222,7 +224,7 @@ export default function Topics() {
                           <code style={{ fontSize: 12 }}>{ruleValueDisplay(r.ruleValue)}</code>
                         ),
                       },
-                      { title: 'Ưu tiên', dataIndex: 'priority', key: 'priority', width: 80 },
+                      { title: 'Ưu tiên', dataIndex: 'priority', key: 'priority', width: 80, responsive: ['md'] },
                       {
                         title: '',
                         key: 'actions',

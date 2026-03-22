@@ -25,6 +25,7 @@ export default function Articles() {
           loading={loading}
           dataSource={rows}
           rowKey="id"
+          scroll={{ x: 580 }}
           expandable={{
             expandedRowRender: (r) => (
               <div style={{ padding: '8px 0' }}>
@@ -56,7 +57,7 @@ export default function Articles() {
                 </a>
               ),
             },
-            { title: 'Nguồn', dataIndex: 'source', key: 'source', width: 120 },
+            { title: 'Nguồn', dataIndex: 'source', key: 'source', width: 120, responsive: ['sm'] },
             {
               title: 'Loại',
               dataIndex: 'contentType',
@@ -69,6 +70,7 @@ export default function Articles() {
               dataIndex: 'publishedAt',
               key: 'publishedAt',
               width: 160,
+              responsive: ['md'],
               render: (_: unknown, r: ArticleRow) => (r.publishedAt ? new Date(r.publishedAt).toLocaleString('vi-VN') : '-'),
             },
             {

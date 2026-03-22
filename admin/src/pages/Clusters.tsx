@@ -140,7 +140,7 @@ export default function Clusters() {
           mode="multiple"
           size="small"
           placeholder="Lọc theo nhóm"
-          style={{ width: 240 }}
+          style={{ width: '100%', minWidth: 140, maxWidth: 280 }}
           value={categories}
           onChange={(v) => {
             const val = (v ?? []) as string[];
@@ -163,7 +163,7 @@ export default function Clusters() {
           mode="multiple"
           size="small"
           placeholder="Lọc theo chủ đề"
-          style={{ width: 240 }}
+          style={{ width: '100%', minWidth: 140, maxWidth: 280 }}
           value={selectedTopics}
           onChange={(v) => {
             const val = (v ?? []) as string[];
@@ -185,7 +185,7 @@ export default function Clusters() {
         <Select
           size="small"
           placeholder="Thời gian"
-          style={{ width: 140 }}
+          style={{ width: '100%', minWidth: 120, maxWidth: 160 }}
           value={hoursFromUrl}
           onChange={(v) => {
             const next = new URLSearchParams(searchParams);
@@ -217,6 +217,7 @@ export default function Clusters() {
         size="small"
         search={false}
         options={false}
+        scroll={{ x: 720 }}
         expandable={{
           expandedRowRender: (c) => {
             const articles = c.articles ?? [];
@@ -290,6 +291,7 @@ export default function Clusters() {
             width: 160,
             ellipsis: true,
             copyable: true,
+            responsive: ['md'],
           },
           {
             title: 'Tiêu đề',
@@ -307,6 +309,7 @@ export default function Clusters() {
             dataIndex: 'topicIds',
             key: 'topicIds',
             width: 180,
+            responsive: ['sm'],
             render: (_: unknown, r: Cluster) =>
               r.topicIds?.length ? (
                 <span style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
@@ -347,6 +350,7 @@ export default function Clusters() {
             title: 'Nguồn',
             key: 'count',
             width: 80,
+            responsive: ['md'],
             render: (_: unknown, r: Cluster) => {
               const n =
                 (r.articles?.length ?? 0) || (r.articleIds ?? []).length;

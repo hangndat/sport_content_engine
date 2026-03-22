@@ -108,7 +108,7 @@ export default function Drafts() {
           <Select
             size="small"
             placeholder="Trạng thái"
-            style={{ width: 140 }}
+            style={{ width: '100%', minWidth: 120, maxWidth: 160 }}
             allowClear
             value={statusFilter || undefined}
             onChange={(v) => setStatusFilter(v ?? '')}
@@ -122,7 +122,7 @@ export default function Drafts() {
           <Select
             size="small"
             placeholder="Format"
-            style={{ width: 140 }}
+            style={{ width: '100%', minWidth: 120, maxWidth: 160 }}
             allowClear
             value={formatFilter || undefined}
             onChange={(v) => setFormatFilter(v ?? '')}
@@ -141,6 +141,7 @@ export default function Drafts() {
           search={false}
           options={false}
           pagination={pagination}
+          scroll={{ x: 680 }}
           onRow={(r) => ({ style: { cursor: 'pointer' }, onClick: () => setDrawerDraft(r) })}
           expandable={{
             expandedRowRender: (row) => {
@@ -209,6 +210,7 @@ export default function Drafts() {
               dataIndex: 'tone',
               key: 'tone',
               width: 100,
+              responsive: ['md'],
               render: (_: unknown, r: DraftRow) => (
                 <Tag>{toneLabels[r.tone ?? 'neutral'] ?? 'Trung lập'}</Tag>
               ),
@@ -218,6 +220,7 @@ export default function Drafts() {
               dataIndex: 'confidenceScore',
               key: 'confidenceScore',
               width: 80,
+              responsive: ['lg'],
               render: (_: unknown, r: DraftRow) =>
                 r.confidenceScore != null ? (
                   <Tag>{r.confidenceScore}%</Tag>
@@ -230,6 +233,7 @@ export default function Drafts() {
               dataIndex: 'format',
               key: 'format',
               width: 100,
+              responsive: ['sm'],
               render: (_: unknown, r: DraftRow) => variantLabels[r.format] ?? r.format,
             },
             {

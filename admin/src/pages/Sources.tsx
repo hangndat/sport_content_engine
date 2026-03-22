@@ -74,6 +74,7 @@ export default function Sources() {
           loading={loading}
           dataSource={arr}
           rowKey="id"
+          scroll={{ x: 700 }}
           columns={[
             { title: 'ID', dataIndex: 'id', key: 'id', width: 120 },
             {
@@ -107,6 +108,7 @@ export default function Sources() {
               ),
               key: 'articleCount',
               width: 100,
+              responsive: ['md'],
               sorter: (a: SourceRow, b: SourceRow) =>
                 (articleCounts[b.id]?.total ?? 0) - (articleCounts[a.id]?.total ?? 0),
               render: (_: unknown, r: SourceRow) => {
@@ -126,7 +128,7 @@ export default function Sources() {
                 );
               },
             },
-            { title: 'URL', dataIndex: 'url', key: 'url', ellipsis: true },
+            { title: 'URL', dataIndex: 'url', key: 'url', ellipsis: true, responsive: ['sm'] },
             {
               title: '',
               key: 'actions',

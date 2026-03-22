@@ -24,7 +24,7 @@ export function PageToolbar({
   loading = false,
 }: PageToolbarProps) {
   return (
-    <div style={toolbarStyle}>
+    <div className="page-toolbar" style={toolbarStyle}>
       {children}
       {onRefresh && (
         <>

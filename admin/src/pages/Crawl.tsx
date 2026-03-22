@@ -200,6 +200,7 @@ export default function Crawl() {
         size="small"
         search={false}
         options={false}
+        scroll={{ x: 720 }}
         columns={[
           {
             title: 'Thời gian',
@@ -225,6 +226,7 @@ export default function Crawl() {
             title: 'Thời lượng',
             key: 'duration',
             width: 90,
+            responsive: ['sm'],
             render: (_: unknown, r: Run) => {
               if (r.status === 'running' || !r.finishedAt) return '-';
               const s = Math.round(
@@ -252,6 +254,7 @@ export default function Crawl() {
             dataIndex: 'triggeredBy',
             key: 'triggeredBy',
             width: 90,
+            responsive: ['md'],
             render: (_: unknown, r: Run) =>
               r.triggeredBy === 'scheduled' ? 'Tự động' : 'Thủ công',
           },

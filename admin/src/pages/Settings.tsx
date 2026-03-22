@@ -447,6 +447,7 @@ export default function Settings() {
                   dataSource={rescoreResult.changes}
                   rowKey="clusterId"
                   pagination={{ pageSize: 10, showSizeChanger: false }}
+                  scroll={{ x: 400 }}
                   columns={[
                     {
                       title: 'Tiêu đề',

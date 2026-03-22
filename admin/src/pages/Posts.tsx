@@ -18,9 +18,10 @@ export default function Posts() {
         loading={loading}
         dataSource={rows}
         rowKey="id"
+        scroll={{ x: 500 }}
         columns={[
           { title: 'Platform', dataIndex: 'platform', key: 'platform', width: 100 },
-          { title: 'External ID', dataIndex: 'externalId', key: 'externalId', ellipsis: true },
+          { title: 'External ID', dataIndex: 'externalId', key: 'externalId', ellipsis: true, responsive: ['sm'] },
             {
               title: 'Ngày đăng',
               dataIndex: 'publishedAt',

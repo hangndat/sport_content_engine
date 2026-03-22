@@ -50,6 +50,7 @@ export default function WriterHistory() {
         pagination={pagination}
         search={false}
         toolBarRender={() => []}
+        scroll={{ x: 600 }}
         columns={[
           {
             title: 'Thời gian',
@@ -62,6 +63,7 @@ export default function WriterHistory() {
             title: 'Loại',
             dataIndex: 'type',
             width: 110,
+            responsive: ['sm'],
             render: (_: unknown, r: WriterHistoryItem) => (
               <Tag color={r.type === 'rewrite' ? 'blue' : 'green'}>
                 {r.type === 'rewrite' ? (
